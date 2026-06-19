@@ -1,0 +1,42 @@
+workflows:
+  android-build:
+    name: Android Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    triggering:
+      cancel_previous_builds: true
+
+    environment:
+      java: 17
+
+    scripts:
+
+      - name: Create keystore (.keystore)
+        script: |
+          echo "Creating keystore..."
+
+          mkdir -p app/keystore
+
+          keytool -genkeypair -v \
+            -keystore app/keystore/release.keystore \
+            -alias $KEY_ALIAS \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass $KEYSTORE_PASSWORD \
+            -keypass $KEY_PASSWORD \
+            -dname "CN=OpenAnime, OU=Dev, O=OpenAnime, L=City, ST=State, C=IT"
+
+          ls -la app/keystore
+
+      - name: Build Release
+        script: |
+          chmod +x gradlew
+          export KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD"
+          export KEY_ALIAS="$KEY_ALIAS"
+          export KEY_PASSWORD="$KEY_PASSWORD"
+          ./gradlew clean :app:assembleRelease --stacktrace
+
+    artifacts:
+      - app/build/outputs/apk/**/*.apk

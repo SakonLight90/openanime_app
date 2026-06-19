@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">OpenAnime</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Cerca</string>
+    <string name="nav_watchlist">Lista</string>
+    <string name="nav_settings">Impostazioni</string>
+
+    <!-- Home -->
+    <string name="section_popular">Popolari</string>
+    <string name="section_ongoing">In Corso</string>
+    <string name="section_upcoming">Imminenti</string>
+    <string name="section_newest">Nuovi</string>
+    <string name="section_updated">Aggiornati</string>
+    <string name="scroll_to_top">Torna su</string>
+
+    <!-- Search -->
+    <string name="search_hint">Cerca anime…</string>
+    <string name="search_no_results">Nessun risultato</string>
+    <string name="az_list_title">A-Z</string>
+    <string name="az_list_no_results">Nessun risultato per %s</string>
+
+    <!-- Detail -->
+    <string name="detail_not_found">Anime non trovato</string>
+    <string name="detail_episodes">Episodi</string>
+    <string name="detail_version">Versione</string>
+    <string name="detail_season_format">Stagione %1$d (Ep. %2$s)</string>
+    <string name="detail_share_title">Condividi</string>
+    <string name="detail_related_title">Potrebbe piacerti</string>
+
+    <!-- Player -->
+    <string name="player_retry">Riprova</string>
+
+    <!-- Watchlist -->
+    <string name="watchlist_empty">La tua lista è vuota</string>
+    <string name="watchlist_empty_hint">Aggiungi anime dalla home o dal dettaglio</string>
+
+    <!-- Genres -->
+    <string name="genres_title">Generi</string>
+    <string name="genres_empty">Nessun genere disponibile</string>
+    <string name="genres_search_hint">Cerca per titolo o sfoglia per genere / A-Z</string>
+    <string name="genre_anime_empty">Nessun anime in questo genere</string>
+
+    <!-- Settings -->
+    <string name="settings_history">Storico</string>
+    <string name="settings_custom_lists">Le mie liste</string>
+    <string name="settings_seasonal">Stagionali</string>
+    <string name="settings_accent_color">Colore accento</string>
+    <string name="settings_sleep_timer">Timer sonno</string>
+</resources>
