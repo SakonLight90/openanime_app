@@ -155,8 +155,9 @@ class AnimeRepositoryImpl(
     }
 
     override suspend fun fetchHome() {
-        val home = api.getHome()
-        animeDao.insertAll(home.hero.map { it.toCacheEntity("trending") })
+        try {
+            val home = api.getHome()
+            animeDao.insertAll(home.hero.map { it.toCacheEntity("trending") })
         animeDao.insertAll(home.popular.map { it.toCacheEntity("popular") })
         animeDao.insertAll(home.ongoing.map { it.toCacheEntity("ongoing") })
         animeDao.insertAll(home.upcoming.map { it.toCacheEntity("upcoming") })
@@ -164,9 +165,10 @@ class AnimeRepositoryImpl(
         episodeDao.insertAll(
             home.latestEpisodes.map { it.toCacheEntity(animeId = it.anime?.id ?: 0) }
         )
-        try {
-            val updated = api.getUpdated()
-            animeDao.insertAll(updated.map { it.toCacheEntity("updated") })
+            try {
+                val updated = api.getUpdated()
+                animeDao.insertAll(updated.map { it.toCacheEntity("updated") })
+            } catch (_: Exception) { }
         } catch (_: Exception) { }
     }
 

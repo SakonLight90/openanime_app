@@ -27,9 +27,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import androidx.compose.ui.res.stringResource
 import com.savage.anime.R
 import com.savage.anime.ui.screens.detail.components.LanguageSelector
@@ -57,7 +57,10 @@ fun DetailScreen(
     val anime = state.anime
 
     val domainSeasons = remember(anime) { groupEpisodesIntoSeasons(anime?.episodes ?: emptyList()) }
-    var selectedSeasonIndex by remember(domainSeasons.size) { mutableStateOf(0) }
+    var selectedSeasonIndex by remember(anime?.id) { mutableStateOf(0) }
+    if (selectedSeasonIndex >= domainSeasons.size && domainSeasons.isNotEmpty()) {
+        selectedSeasonIndex = 0
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -332,10 +335,6 @@ fun DetailScreen(
                     }
 
                     if (domainSeasons.isNotEmpty()) {
-                        if (selectedSeasonIndex >= domainSeasons.size) {
-                            selectedSeasonIndex = 0
-                        }
-
                         item {
                             Text(
                                 text = stringResource(R.string.detail_episodes),

@@ -2,9 +2,8 @@
 
 > ⚠️ **App instabile** — sconsigliata per uso quotidiano. Bug noti in fase di risoluzione.
 
-App per lo streaming di anime con interfaccia in stile Netflix.
+App per lo streaming di anime.
 
-![OpenAnime Banner](screenshots/banner.png)
 
 ## Funzionalità
 
@@ -19,13 +18,6 @@ App per lo streaming di anime con interfaccia in stile Netflix.
 - **Anime stagionali** — esplora per stagione e anno
 - **Cache offline** — velocizza la navigazione e funziona senza connessione
 - **Tema scuro** — interfaccia scura completa + colore accento personalizzabile
-
-## Screenshots
-
-![Home](screenshots/home.png)
-![Cerca](screenshots/search.png)
-![Dettaglio](screenshots/detail.png)
-![Player](screenshots/player.png)
 
 ## Download
 

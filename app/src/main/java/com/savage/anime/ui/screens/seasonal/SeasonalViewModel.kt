@@ -15,7 +15,8 @@ import javax.inject.Inject
 
 data class SeasonalUiState(
     val seasons: Map<String, List<Anime>> = emptyMap(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -42,7 +43,7 @@ class SeasonalViewModel @Inject constructor(
                 val seasons = groupBySeason(allAnime)
                 _uiState.value = SeasonalUiState(seasons = seasons, isLoading = false)
             } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(isLoading = false, error = "Errore caricamento stagionali")
             }
         }
     }

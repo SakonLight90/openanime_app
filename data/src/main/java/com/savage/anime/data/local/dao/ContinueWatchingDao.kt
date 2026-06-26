@@ -26,11 +26,10 @@ interface ContinueWatchingDao {
         INNER JOIN anime_cache a ON c.anime_id = a.id
         INNER JOIN episodes_cache e ON c.episode_id = e.id
         INNER JOIN (
-            SELECT a2.title, MAX(c2.last_watched_at) as max_watched
+            SELECT c2.anime_id, MAX(c2.last_watched_at) as max_watched
             FROM continue_watching c2
-            INNER JOIN anime_cache a2 ON c2.anime_id = a2.id
-            GROUP BY a2.title
-        ) latest ON a.title = latest.title AND c.last_watched_at = latest.max_watched
+            GROUP BY c2.anime_id
+        ) latest ON c.anime_id = latest.anime_id AND c.last_watched_at = latest.max_watched
         ORDER BY c.last_watched_at DESC
     """)
     fun getContinueWatching(): Flow<List<ContinueWatchingWithDetails>>

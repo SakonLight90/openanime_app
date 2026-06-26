@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.savage.anime.R
 import com.savage.anime.navigation.Screen
@@ -107,7 +107,7 @@ fun HomeScreen(
                     if (state.latestEpisodes.isNotEmpty()) {
                         item {
                             LatestEpisodesRow(
-                                items = state.latestEpisodes.take(20),
+                                items = state.latestEpisodes.take(50),
                                 onItemClick = { animeId, episodeId ->
                                     navController.navigate("player/$animeId/$episodeId")
                                 },

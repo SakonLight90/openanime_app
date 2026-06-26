@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
 
                 val combinedHero = (trending + popular)
                     .distinctBy { it.id }
-                    .take(10)
+                    .take(20)
 
                 HomeUiState(
                     hero = combinedHero,
@@ -118,15 +118,18 @@ class HomeViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+        loadGenreSections()
     }
 
     private fun loadGenreSections() {
         viewModelScope.launch {
             try {
-                val genres = animeRepository.getGenres().take(6)
+                val genres = animeRepository.getGenres()
                 val sections = genres.map { genre ->
                     val items = try {
-                        animeRepository.getGenreAnime(genre.id).first().take(10)
+                        animeRepository.getGenreAnime(genre.id).first()
+                            .distinctBy { it.id }
+                            .take(20)
                     } catch (_: Exception) { emptyList() }
                     GenreSection(genre = genre, items = items)
                 }

@@ -16,9 +16,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
+import com.savage.anime.R
 import com.savage.anime.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +48,16 @@ fun SeasonalScreen(
         if (uiState.isLoading) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (uiState.error != null) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = uiState.error ?: "", color = Color.White, fontSize = 16.sp)
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = { viewModel.loadSeasonal() }) {
+                        Text(stringResource(R.string.player_retry))
+                    }
+                }
             }
         } else {
             LazyColumn(

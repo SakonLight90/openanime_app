@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.savage.anime.navigation.Screen
 
@@ -264,18 +264,22 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     val versionName = com.savage.anime.BuildConfig.VERSION_NAME
+                    val branchLabel = when {
+                        versionName.endsWith("a") -> "Alpha"
+                        versionName.endsWith("b") -> "Beta"
+                        versionName.endsWith("h") -> "Hotfix"
+                        else -> "Stabile"
+                    }
                     Text(
                         text = versionName,
                         color = Color(0xFFB3B3B3),
                         fontSize = 14.sp
                     )
-                    if (versionName.endsWith("h")) {
-                        Text(
-                            text = "(Hotfix)",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp
-                        )
-                    }
+                    Text(
+                        text = "($branchLabel)",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp
+                    )
                 }
             }
 

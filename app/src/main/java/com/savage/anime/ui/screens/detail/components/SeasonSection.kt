@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -97,10 +96,11 @@ fun SeasonSection(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
+                                .widthIn(min = 26.dp)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (isWatched) Color(0xFF555555) else MaterialTheme.colorScheme.primary
+                                    if (isWatched) Color(0xFF3A3A3A) else MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -108,16 +108,17 @@ fun SeasonSection(
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = Color(0xFF88FF88),
                                     modifier = Modifier.size(16.dp)
                                 )
                             } else {
                                 Text(
                                     text = formatEpisodeNumber(episode.number),
                                     color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                                 )
                             }
                         }

@@ -27,7 +27,7 @@ fun AnimeCacheEntity.toDomainDetail(): AnimeDetail {
         id = id,
         title = title,
         synopsis = synopsis ?: "",
-        genres = genres?.split(",")?.map { it.trim() } ?: emptyList(),
+        genres = genres?.split(",")?.mapNotNull { it.trim().ifBlank { null } } ?: emptyList(),
         rating = rating,
         episodeCount = episodeCount,
         type = type,

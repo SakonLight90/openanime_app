@@ -43,6 +43,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideLocalUserDataRepository(
+        animeDao: AnimeDao,
         watchlistDao: WatchlistDao,
         continueWatchingDao: ContinueWatchingDao,
         languagePreferenceDao: LanguagePreferenceDao,
@@ -52,6 +53,7 @@ object AppModule {
         customListDao: CustomListDao
     ): LocalUserDataRepository {
         return LocalUserDataRepositoryImpl(
+            animeDao = animeDao,
             watchlistDao = watchlistDao,
             continueWatchingDao = continueWatchingDao,
             languagePreferenceDao = languagePreferenceDao,

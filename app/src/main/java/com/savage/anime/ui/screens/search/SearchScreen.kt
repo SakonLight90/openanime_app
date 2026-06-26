@@ -18,14 +18,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.savage.anime.R
 import com.savage.anime.domain.models.Anime
 import com.savage.anime.navigation.Screen
 import com.savage.anime.ui.utils.currentScreenWidthClass
 import com.savage.anime.ui.utils.gridColumnsForWidth
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 
@@ -133,23 +133,52 @@ fun SearchScreen(
                     }
                 }
 
+                var yearExpanded by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val years = listOf(null to "Tutti", "2026" to "2026", "2025" to "2025", "2024" to "2024", "2023" to "2023", "2022" to "2022", "2021" to "2021")
-                    years.forEach { (year, label) ->
+                    val currentYear = 2026
+                    val yearOptions = buildList {
+                        add(null to "Tutti")
+                        for (y in currentYear downTo 1980 step 5) {
+                            add(y.toString() to y.toString())
+                        }
+                    }
+                    val selectedYearLabel = yearOptions.firstOrNull { it.first == uiState.selectedYear }?.second ?: "Anno"
+
+                    Box {
                         FilterChip(
-                            selected = uiState.selectedYear == year,
-                            onClick = { viewModel.setYearFilter(year) },
-                            label = { Text(label, fontSize = 12.sp) },
+                            selected = uiState.selectedYear != null,
+                            onClick = { yearExpanded = true },
+                            label = { Text(selectedYearLabel, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primary,
                                 containerColor = Color(0xFF222222)
                             )
                         )
+                        DropdownMenu(
+                            expanded = yearExpanded,
+                            onDismissRequest = { yearExpanded = false }
+                        ) {
+                            yearOptions.forEach { (year, label) ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            label,
+                                            color = if (uiState.selectedYear == year) MaterialTheme.colorScheme.primary else Color.White
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setYearFilter(year)
+                                        yearExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }

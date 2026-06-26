@@ -13,10 +13,12 @@ import android.content.pm.ActivityInfo
 import android.graphics.drawable.Icon
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Rational
 
-import android.provider.Settings
 import android.view.WindowInsets
+import android.view.WindowManager.LayoutParams
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -35,9 +37,14 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.BrightnessHigh
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,7 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.savage.anime.R
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -64,7 +71,6 @@ import androidx.navigation.NavController
 
 import androidx.media3.ui.PlayerView
 import com.savage.anime.utils.formatEpisodeNumber
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -93,8 +99,8 @@ fun PlayerScreen(
     var showLockOverlay by remember { mutableStateOf(false) }
     var showSkipText by remember { mutableStateOf<String?>(null) }
     var brightnessOverlay by remember { mutableStateOf<Float?>(null) }
+    var currentBrightness by remember { mutableStateOf(1f) }
     var playerViewReady by remember { mutableStateOf(false) }
-    var pendingToggleJob by remember { mutableStateOf<Job?>(null) }
     val uiAlpha by animateFloatAsState(
         targetValue = if (showUi) 1f else 0f,
         label = "uiAlpha"
@@ -104,11 +110,7 @@ fun PlayerScreen(
         activity?.window?.let { window ->
             window.insetsController?.let { c ->
                 c.hide(WindowInsets.Type.systemBars())
-                c.systemBarsBehavior = if (Build.VERSION.SDK_INT >= 31) {
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                } else {
-                    WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE
-                }
+                c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         }
     }
@@ -165,6 +167,9 @@ fun PlayerScreen(
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose {
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            activity?.window?.let { w ->
+                w.attributes = w.attributes.apply { screenBrightness = LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+            }
         }
     }
 
@@ -288,7 +293,13 @@ fun PlayerScreen(
 
                         Spacer(Modifier.height(16.dp))
 
-                        Button(onClick = { viewModel.retryStream() }) {
+                        Button(onClick = {
+                            if (uiState.episode == null) {
+                                viewModel.retryLoadPlayer()
+                            } else {
+                                viewModel.retryStream()
+                            }
+                        }) {
                             Text(stringResource(R.string.player_retry))
                         }
                     }
@@ -342,14 +353,13 @@ fun PlayerScreen(
                                 } else {
                                     var lastTapTime = 0L
                                     var lastTapX = 0f
-                                    var consecutiveSkips = 0
                                     awaitEachGesture {
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         val halfWidth = size.width / 2f
                                         val centerX = size.width / 2f
                                         val centerY = size.height / 2f
+                                        val startY = down.position.y
                                         var isDrag = false
-                                        var cumulativeDrag = 0f
 
                                         while (true) {
                                             val event = awaitPointerEvent()
@@ -360,36 +370,28 @@ fun PlayerScreen(
                                             if (!isDrag && delta.getDistance() > viewConfiguration.touchSlop) {
                                                 isDrag = true
                                                 lastTapTime = 0L
-                                                consecutiveSkips = 0
                                             }
 
                                             if (isDrag) {
-                                                cumulativeDrag += delta.y
-                                                val steps = (-cumulativeDrag / 150f).toInt()
-                                                if (steps != 0) {
+                                                val dragDelta = startY - change.position.y
+                                                val progress = (dragDelta / size.height.toFloat()).coerceIn(-1f, 1f)
+
+                                                if (abs(progress) > 0.02f) {
                                                     if (down.position.x < halfWidth) {
-                                                        val ctx = context
-                                                        if (Settings.System.canWrite(ctx)) {
-                                                            val curBright = Settings.System.getInt(ctx.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128)
-                                                            val newBright = (curBright + steps * 8).coerceIn(1, 255)
-                                                            Settings.System.putInt(ctx.contentResolver, Settings.System.SCREEN_BRIGHTNESS, newBright)
+                                                        val targetBrightness = (currentBrightness + progress).coerceIn(0.05f, 1f)
+                                                        activity?.window?.let { w ->
+                                                            w.attributes = w.attributes.apply { screenBrightness = targetBrightness }
                                                         }
-                                                        activity?.window?.let { win ->
-                                                            val lp = win.attributes
-                                                            val sysBright = Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128)
-                                                            val currentBright = if (lp.screenBrightness < 0f) sysBright / 255f else lp.screenBrightness
-                                                            val newBright = (currentBright + steps * 0.01f).coerceIn(0.01f, 1.0f)
-                                                            win.attributes = lp.apply { screenBrightness = newBright }
-                                                            brightnessOverlay = newBright
-                                                        }
+                                                        currentBrightness = targetBrightness
+                                                        brightnessOverlay = targetBrightness
                                                     } else {
                                                         audioManager?.let { am ->
                                                             val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                                                            val newVol = (am.getStreamVolume(AudioManager.STREAM_MUSIC) + steps).coerceIn(0, max)
+                                                            val curVol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                                            val newVol = (curVol + (progress * max).toInt()).coerceIn(0, max)
                                                             am.setStreamVolume(AudioManager.STREAM_MUSIC, newVol, AudioManager.FLAG_SHOW_UI)
                                                         }
                                                     }
-                                                    cumulativeDrag -= steps * 150f
                                                 }
                                                 change.consume()
                                             }
@@ -398,14 +400,12 @@ fun PlayerScreen(
                                         if (!isDrag) {
                                             val now = System.currentTimeMillis()
                                             if (now - lastTapTime < 300L && abs(down.position.x - lastTapX) < 200f) {
-                                                consecutiveSkips++
-                                                val skipAmount = consecutiveSkips * 10
+                                                val skipAmount = 10
                                                 val dir = if (lastTapX < size.width / 2f) "«" else "»"
                                                 showSkipText = "$dir $skipAmount" + "s"
                                                 if (lastTapX < size.width / 2f) { viewModel.skipBackward(skipAmount) } else { viewModel.skipForward(skipAmount) }
                                                 lastTapTime = now
                                             } else {
-                                                consecutiveSkips = 0
                                                 lastTapTime = now
                                                 lastTapX = down.position.x
                                                 val isCenterTap = abs(down.position.x - centerX) < 140f && abs(down.position.y - centerY) < 140f
@@ -457,12 +457,14 @@ fun PlayerScreen(
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1
                                     )
-                                    Text(
-                                        text = "Ep. ${uiState.episode?.let { formatEpisodeNumber(it.number) } ?: "0"}",
-                                        color = Color(0xFFCCCCCC),
-                                        fontSize = 13.sp,
-                                        maxLines = 1
-                                    )
+                                    if (uiState.episode != null) {
+                                        Text(
+                                            text = "Ep. ${formatEpisodeNumber(uiState.episode!!.number)}",
+                                            color = Color(0xFFCCCCCC),
+                                            fontSize = 13.sp,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
 
                                 IconButton(onClick = { screenLocked = true; showUi = false; showLockOverlay = true; activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED }) {
@@ -518,36 +520,45 @@ fun PlayerScreen(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.CenterStart)
-                                .padding(start = 24.dp)
-                                .width(48.dp)
-                                .height(200.dp)
-                                .background(Color(0xAA000000), RoundedCornerShape(8.dp)),
+                                .padding(start = 16.dp)
+                                .width(56.dp)
+                                .height(260.dp)
+                                .background(Color(0xCC000000), RoundedCornerShape(12.dp))
+                                .padding(12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
+                                Icon(
+                                    Icons.Filled.BrightnessHigh,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFCC00),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(Modifier.height(10.dp))
                                 Box(
                                     modifier = Modifier
-                                        .width(24.dp)
+                                        .width(4.dp)
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color(0x33FFFFFF)),
-                                    contentAlignment = Alignment.TopCenter
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(Color(0x44FFFFFF)),
+                                    contentAlignment = Alignment.BottomCenter
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .fillMaxHeight(level)
-                                            .align(Alignment.BottomCenter)
-                                            .clip(RoundedCornerShape(4.dp))
+                                            .clip(RoundedCornerShape(2.dp))
                                             .background(Color.White)
                                     )
                                 }
                             }
                         }
                     }
+
+
 
                     if (screenLocked && showLockOverlay) {
                         Box(
@@ -565,10 +576,10 @@ fun PlayerScreen(
                                 onClick = { screenLocked = false; showUi = true; showLockOverlay = false; activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE }
                             ) {
                                 Icon(
-                                    Icons.Default.Lock,
+                                    Icons.Default.LockOpen,
                                     contentDescription = "Sblocca",
                                     tint = Color.White,
-                                    modifier = Modifier.size(48.dp)
+                                    modifier = Modifier.size(56.dp)
                                 )
                             }
                         }
@@ -640,11 +651,21 @@ fun PlayerScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     IconButton(onClick = { showEpisodeList = true }) {
-                                        Text("📋", fontSize = 18.sp)
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.List,
+                                            contentDescription = "Episodi",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
                                     }
 
                                     IconButton(onClick = { viewModel.skipBackward() }) {
-                                        Text("< 10s", color = Color.White, fontSize = 13.sp)
+                                        Icon(
+                                            Icons.Default.SkipPrevious,
+                                            contentDescription = "Indietro 10s",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
                                     }
 
                                     IconButton(onClick = { viewModel.togglePlayPause() }) {
@@ -652,12 +673,17 @@ fun PlayerScreen(
                                             imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                             contentDescription = null,
                                             tint = Color.White,
-                                            modifier = Modifier.size(44.dp)
+                                            modifier = Modifier.size(48.dp)
                                         )
                                     }
 
                                     IconButton(onClick = { viewModel.skipForward() }) {
-                                        Text("10s >", color = Color.White, fontSize = 13.sp)
+                                        Icon(
+                                            Icons.Default.SkipNext,
+                                            contentDescription = "Avanti 10s",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
                                     }
 
                                     var showSpeedMenu by remember { mutableStateOf(false) }
@@ -929,4 +955,9 @@ private fun enterPiP(context: Context, activity: Activity?, isPlaying: Boolean) 
         .setActions(listOf(action))
         .build()
     activity?.enterPictureInPictureMode(params)
+    Handler(Looper.getMainLooper()).postDelayed({
+        if (activity?.isInPictureInPictureMode != true) {
+            PiPState.enteringPiP = false
+        }
+    }, 500)
 }

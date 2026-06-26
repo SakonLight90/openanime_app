@@ -39,6 +39,7 @@ class PlayerViewModel @Inject constructor(
     val sleepTimer: StateFlow<SleepTimerState> = _sleepTimer.asStateFlow()
 
     private var player: ExoPlayer? = null
+    private var playerListener: Player.Listener? = null
 
     private var retryCount = 0
     private var currentAnimeId = 0
@@ -65,6 +66,8 @@ class PlayerViewModel @Inject constructor(
     fun releasePlayer() {
         saveJob?.cancel()
         sleepTimerJob?.cancel()
+        playerListener?.let { player?.removeListener(it) }
+        playerListener = null
         player?.release()
         player = null
     }
@@ -118,12 +121,33 @@ class PlayerViewModel @Inject constructor(
         currentEpisodeId = episodeId
         retryCount = 0
 
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
         viewModelScope.launch {
             try {
                 val detail = animeRepository.getDetail(animeId).first { d ->
-                    d.episodes.any { it.id == episodeId }
+                    d.episodes.isNotEmpty()
                 }
-                val episode = detail.episodes.first { it.id == episodeId }
+                val episode = detail.episodes.firstOrNull { it.id == episodeId }
+
+                if (episode == null) {
+                    val fallback = animeRepository.getEpisodeById(episodeId)
+                    if (fallback != null) {
+                        currentToken = fallback.token
+                        currentAnimeTitle = fallback.anime?.title ?: detail.title
+                        currentAnimeImage = fallback.anime?.image ?: detail.coverImage
+                        val position = localUserDataRepository.getPosition(animeId, episodeId) ?: 0L
+                        _uiState.value = _uiState.value.copy(
+                            anime = detail,
+                            episode = fallback,
+                            position = position,
+                            isLoading = true,
+                            error = null
+                        )
+                        return@launch
+                    }
+                    throw Exception("Episode $episodeId not found")
+                }
 
                 currentToken = episode.token
                 currentAnimeTitle = detail.title
@@ -145,6 +169,10 @@ class PlayerViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun retryLoadPlayer() {
+        loadPlayer(currentAnimeId, currentEpisodeId)
     }
 
     fun loadStream() {
@@ -196,6 +224,7 @@ class PlayerViewModel @Inject constructor(
             isLoading = true
         )
 
+        playerListener = null
         player?.release()
         player = null
 
@@ -210,9 +239,10 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val detail = animeRepository.getDetail(currentAnimeId).first { d ->
-                    d.episodes.any { it.id == currentEpisodeId }
+                    d.episodes.isNotEmpty()
                 }
-                val episode = detail.episodes.first { it.id == currentEpisodeId }
+                val episode = detail.episodes.firstOrNull { it.id == currentEpisodeId }
+                    ?: animeRepository.getEpisodeById(currentEpisodeId) ?: return@launch
                 currentToken = episode.token
                 if (currentToken.isNotEmpty()) {
                     loadStream(currentToken)
@@ -246,7 +276,8 @@ class PlayerViewModel @Inject constructor(
         exo.playWhenReady = shouldPlay
         _uiState.value = _uiState.value.copy(isPlaying = shouldPlay)
 
-        exo.addListener(object : Player.Listener {
+        playerListener?.let { exo.removeListener(it) }
+        val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
                     startProgressSaving(exo)
@@ -260,7 +291,9 @@ class PlayerViewModel @Inject constructor(
             override fun onPlayerError(error: PlaybackException) {
                 handleStreamError()
             }
-        })
+        }
+        playerListener = listener
+        exo.addListener(listener)
     }
 
     private fun startProgressSaving(player: ExoPlayer) {

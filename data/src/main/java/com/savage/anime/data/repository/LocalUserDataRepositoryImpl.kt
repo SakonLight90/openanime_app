@@ -1,5 +1,6 @@
 package com.savage.anime.data.repository
 
+import com.savage.anime.data.local.dao.AnimeDao
 import com.savage.anime.data.local.dao.ContinueWatchingDao
 import com.savage.anime.data.local.dao.CustomListDao
 import com.savage.anime.data.local.dao.EpisodeDao
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class LocalUserDataRepositoryImpl @Inject constructor(
+    private val animeDao: AnimeDao,
     private val watchlistDao: WatchlistDao,
     private val continueWatchingDao: ContinueWatchingDao,
     private val languagePreferenceDao: LanguagePreferenceDao,
@@ -144,13 +146,17 @@ class LocalUserDataRepositoryImpl @Inject constructor(
     override fun getCustomLists(): Flow<List<CustomList>> =
         customListDao.getAllLists()
             .map { entities ->
-                entities.map { entity ->
-                    val items = customListDao.getItems(entity.id)
+                entities.mapNotNull { entity ->
+                    val itemIds = customListDao.getItems(entity.id)
+                    val items = itemIds.mapNotNull { item ->
+                        val cached = animeDao.getById(item.animeId)
+                        cached?.toDomain()
+                    }
                     CustomList(
                         id = entity.id,
                         name = entity.name,
                         createdAt = entity.createdAt,
-                        items = emptyList()
+                        items = items
                     )
                 }
             }
