@@ -81,7 +81,9 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    implementation(libs.coil.core)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

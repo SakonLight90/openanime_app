@@ -11,16 +11,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.graphics.drawable.Icon
-import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Rational
 
+import android.view.TextureView
+import android.view.ViewGroup
 import android.view.WindowInsets
-import android.view.WindowManager.LayoutParams
 import android.view.WindowInsetsController
 import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -43,7 +44,6 @@ import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -68,10 +68,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.navigation.NavController
-
-import androidx.media3.ui.PlayerView
 import com.savage.anime.utils.formatEpisodeNumber
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -88,7 +88,6 @@ fun PlayerScreen(
     val sleepTimer by viewModel.sleepTimer.collectAsState()
     val context = LocalContext.current
     val activity = remember { context.findActivity() }
-    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     val coroutineScope = rememberCoroutineScope()
 
     var showUi by remember { mutableStateOf(false) }
@@ -98,9 +97,10 @@ fun PlayerScreen(
     var screenLocked by remember { mutableStateOf(false) }
     var showLockOverlay by remember { mutableStateOf(false) }
     var showSkipText by remember { mutableStateOf<String?>(null) }
-    var brightnessOverlay by remember { mutableStateOf<Float?>(null) }
-    var currentBrightness by remember { mutableStateOf(1f) }
+    var totalSkipAmount by remember { mutableIntStateOf(0) }
+    var skipForwardAfterNearEnd by remember { mutableStateOf(false) }
     var playerViewReady by remember { mutableStateOf(false) }
+    var pipResumeTrigger by remember { mutableIntStateOf(0) }
     val uiAlpha by animateFloatAsState(
         targetValue = if (showUi) 1f else 0f,
         label = "uiAlpha"
@@ -111,6 +111,14 @@ fun PlayerScreen(
             window.insetsController?.let { c ->
                 c.hide(WindowInsets.Type.systemBars())
                 c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+    }
+
+    fun applyCutoutMode() {
+        activity?.window?.let { w ->
+            w.attributes = w.attributes.apply {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             }
         }
     }
@@ -130,9 +138,12 @@ fun PlayerScreen(
                 }
 
                 Lifecycle.Event.ON_RESUME -> {
+                    applyCutoutMode()
+                    hideSystemUi()
                     activity?.requestedOrientation = if (screenLocked) ActivityInfo.SCREEN_ORIENTATION_LOCKED else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                     activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     if (PiPState.isPlayerActive) {
+                        pipResumeTrigger++
                         if (!viewModel.isPlayerAlive()) {
                             viewModel.reloadPlayerForPip()
                         }
@@ -164,12 +175,10 @@ fun PlayerScreen(
     }
 
     DisposableEffect(Unit) {
+        applyCutoutMode()
         activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose {
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            activity?.window?.let { w ->
-                w.attributes = w.attributes.apply { screenBrightness = LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
-            }
         }
     }
 
@@ -177,6 +186,7 @@ fun PlayerScreen(
         if (showUi && uiState.isPlaying) {
             delay(4000)
             showUi = false
+            hideSystemUi()
         }
     }
 
@@ -198,13 +208,7 @@ fun PlayerScreen(
         if (showSkipText != null) {
             delay(1200)
             showSkipText = null
-        }
-    }
-
-    LaunchedEffect(brightnessOverlay) {
-        if (brightnessOverlay != null) {
-            delay(1500)
-            brightnessOverlay = null
+            totalSkipAmount = 0
         }
     }
 
@@ -307,6 +311,13 @@ fun PlayerScreen(
 
                 else -> {
 
+                    val textureViewRef = remember { mutableStateOf<TextureView?>(null) }
+
+                    LaunchedEffect(pipResumeTrigger) {
+                        val tv = textureViewRef.value ?: return@LaunchedEffect
+                        viewModel.getExoPlayer()?.setVideoTextureView(tv)
+                    }
+
                     AndroidView(
                         modifier = Modifier
                             .fillMaxSize()
@@ -316,13 +327,21 @@ fun PlayerScreen(
                                 }
                             },
                         factory = { ctx ->
-                            PlayerView(ctx).apply {
-                                useController = false
-                            }
+                            val frame = AspectRatioFrameLayout(ctx)
+                            val tv = TextureView(ctx)
+                            textureViewRef.value = tv
+                            frame.addView(tv, FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            ))
+                            frame
                         },
                         update = { view ->
-                            view.player = viewModel.getExoPlayer()
-                            view.resizeMode = uiState.resizeMode
+                            view.setResizeMode(uiState.resizeMode)
+                            if (view.childCount > 0) {
+                                val tv = view.getChildAt(0) as TextureView
+                                viewModel.getExoPlayer()?.setVideoTextureView(tv)
+                            }
                         }
                     )
 
@@ -355,68 +374,29 @@ fun PlayerScreen(
                                     var lastTapX = 0f
                                     awaitEachGesture {
                                         val down = awaitFirstDown(requireUnconsumed = false)
-                                        val halfWidth = size.width / 2f
                                         val centerX = size.width / 2f
                                         val centerY = size.height / 2f
-                                        val startY = down.position.y
-                                        var isDrag = false
-
-                                        while (true) {
-                                            val event = awaitPointerEvent()
-                                            val change = event.changes.firstOrNull() ?: break
-                                            if (!change.pressed) break
-
-                                            val delta = change.position - change.previousPosition
-                                            if (!isDrag && delta.getDistance() > viewConfiguration.touchSlop) {
-                                                isDrag = true
-                                                lastTapTime = 0L
-                                            }
-
-                                            if (isDrag) {
-                                                val dragDelta = startY - change.position.y
-                                                val progress = (dragDelta / size.height.toFloat()).coerceIn(-1f, 1f)
-
-                                                if (abs(progress) > 0.02f) {
-                                                    if (down.position.x < halfWidth) {
-                                                        val targetBrightness = (currentBrightness + progress).coerceIn(0.05f, 1f)
-                                                        activity?.window?.let { w ->
-                                                            w.attributes = w.attributes.apply { screenBrightness = targetBrightness }
-                                                        }
-                                                        currentBrightness = targetBrightness
-                                                        brightnessOverlay = targetBrightness
-                                                    } else {
-                                                        audioManager?.let { am ->
-                                                            val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                                                            val curVol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-                                                            val newVol = (curVol + (progress * max).toInt()).coerceIn(0, max)
-                                                            am.setStreamVolume(AudioManager.STREAM_MUSIC, newVol, AudioManager.FLAG_SHOW_UI)
-                                                        }
-                                                    }
-                                                }
-                                                change.consume()
-                                            }
-                                        }
-
-                                        if (!isDrag) {
-                                            val now = System.currentTimeMillis()
-                                            if (now - lastTapTime < 300L && abs(down.position.x - lastTapX) < 200f) {
-                                                val skipAmount = 10
-                                                val dir = if (lastTapX < size.width / 2f) "«" else "»"
-                                                showSkipText = "$dir $skipAmount" + "s"
-                                                if (lastTapX < size.width / 2f) { viewModel.skipBackward(skipAmount) } else { viewModel.skipForward(skipAmount) }
-                                                lastTapTime = now
+                                        awaitPointerEvent()
+                                        val now = System.currentTimeMillis()
+                                        if (now - lastTapTime < 300L && abs(down.position.x - lastTapX) < 200f) {
+                                            totalSkipAmount += 10
+                                            val dir = if (lastTapX < size.width / 2f) "«" else "»"
+                                            showSkipText = "$dir $totalSkipAmount" + "s"
+                                            if (lastTapX < size.width / 2f) { viewModel.skipBackward(10) } else { viewModel.skipForward(10); if (uiState.isNearEnd) skipForwardAfterNearEnd = true }
+                                            lastTapTime = now
+                                        } else {
+                                            totalSkipAmount = 0
+                                            lastTapTime = now
+                                            lastTapX = down.position.x
+                                            val isCenterTap = abs(down.position.x - centerX) < 140f && abs(down.position.y - centerY) < 140f
+                                            if (isCenterTap) {
+                                                val wasPlaying = uiState.isPlaying
+                                                viewModel.togglePlayPause()
+                                                showUi = wasPlaying
+                                                showCenterPlayPause = true
                                             } else {
-                                                lastTapTime = now
-                                                lastTapX = down.position.x
-                                                val isCenterTap = abs(down.position.x - centerX) < 140f && abs(down.position.y - centerY) < 140f
-                                                if (isCenterTap) {
-                                                    val wasPlaying = uiState.isPlaying
-                                                    viewModel.togglePlayPause()
-                                                    showUi = wasPlaying
-                                                    showCenterPlayPause = true
-                                                } else {
-                                                    showUi = !showUi
-                                                }
+                                                showUi = !showUi
+                                                if (!showUi) hideSystemUi()
                                             }
                                         }
                                     }
@@ -513,48 +493,6 @@ fun PlayerScreen(
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        }
-                    }
-
-                    brightnessOverlay?.let { level ->
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterStart)
-                                .padding(start = 16.dp)
-                                .width(56.dp)
-                                .height(260.dp)
-                                .background(Color(0xCC000000), RoundedCornerShape(12.dp))
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.BrightnessHigh,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFCC00),
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(Modifier.height(10.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(4.dp)
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(2.dp))
-                                        .background(Color(0x44FFFFFF)),
-                                    contentAlignment = Alignment.BottomCenter
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .fillMaxHeight(level)
-                                            .clip(RoundedCornerShape(2.dp))
-                                            .background(Color.White)
-                                    )
-                                }
-                            }
                         }
                     }
 
@@ -781,13 +719,26 @@ fun PlayerScreen(
                         }
                     }
 
+                    LaunchedEffect(Unit) {
+                        snapshotFlow { uiState.autoNavigateToEpisode }
+                            .filterNotNull()
+                            .first()
+                            .let { nextId ->
+                                viewModel.savePosition()
+                                navController.navigate("player/$animeId/$nextId") {
+                                    popUpTo("player/$animeId/$episodeId") { inclusive = true }
+                                }
+                            }
+                    }
+
                     if (uiState.isNearEnd) {
                         val nextEpisode = viewModel.getNextEpisode()
                         if (nextEpisode != null) {
                             var autoPlayCountdown by remember { mutableStateOf(5) }
                             val autoPlayEnabled = viewModel.isAutoPlayEnabled()
 
-                            LaunchedEffect(autoPlayCountdown) {
+                            LaunchedEffect(autoPlayCountdown, skipForwardAfterNearEnd) {
+                                if (skipForwardAfterNearEnd) return@LaunchedEffect
                                 if (autoPlayEnabled && autoPlayCountdown > 0) {
                                     delay(1000)
                                     autoPlayCountdown--
@@ -826,7 +777,7 @@ fun PlayerScreen(
                                         color = Color.White,
                                         fontSize = 14.sp
                                     )
-                                    if (autoPlayEnabled && autoPlayCountdown > 0) {
+                                    if (autoPlayEnabled && autoPlayCountdown > 0 && !skipForwardAfterNearEnd) {
                                         Spacer(Modifier.width(6.dp))
                                         Text(
                                             text = "($autoPlayCountdown)",
@@ -950,10 +901,18 @@ private fun enterPiP(context: Context, activity: Activity?, isPlaying: Boolean) 
         if (isPlaying) "Metti in pausa" else "Riproduci",
         pendingIntent
     )
-    val params = PictureInPictureParams.Builder()
-        .setAspectRatio(Rational(16, 9))
-        .setActions(listOf(action))
-        .build()
+    val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+            .setSeamlessResizeEnabled(true)
+            .setActions(listOf(action))
+            .build()
+    } else {
+        PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+            .setActions(listOf(action))
+            .build()
+    }
     activity?.enterPictureInPictureMode(params)
     Handler(Looper.getMainLooper()).postDelayed({
         if (activity?.isInPictureInPictureMode != true) {

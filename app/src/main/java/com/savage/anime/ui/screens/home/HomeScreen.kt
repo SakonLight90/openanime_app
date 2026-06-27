@@ -51,14 +51,14 @@ fun HomeScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    item { Spacer(Modifier.height(8.dp)) }
+                    item { Spacer(Modifier.height(4.dp)) }
 
                     state.error?.let { error ->
                         item {
                             Text(
                                 text = error,
                                 color = Color(0xFFB3B3B3),
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.padding(20.dp)
                             )
                         }
                     }
@@ -69,7 +69,7 @@ fun HomeScreen(
                                 text = error,
                                 color = Color(0xFFB3B3B3),
                                 fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -89,6 +89,7 @@ fun HomeScreen(
 
                     if (state.continueWatching.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(16.dp))
                             ContinueWatchingRow(
                                 items = state.continueWatching,
                                 onClick = { item ->
@@ -106,6 +107,7 @@ fun HomeScreen(
 
                     if (state.latestEpisodes.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(24.dp))
                             LatestEpisodesRow(
                                 items = state.latestEpisodes.take(50),
                                 onItemClick = { animeId, episodeId ->
@@ -118,25 +120,9 @@ fun HomeScreen(
                         }
                     }
 
-                    if (state.updated.isNotEmpty()) {
-                        item {
-                            AnimeRow(
-                                title = stringResource(R.string.section_updated),
-                                items = state.updated,
-                                onItemClick = { animeId ->
-                                    navController.navigate(
-                                        Screen.Detail.route.replace("{animeId}", animeId.toString())
-                                    )
-                                },
-                                onViewAllClick = {
-                                    navController.navigate(Screen.Category.route.replace("{category}", "Aggiornati"))
-                                }
-                            )
-                        }
-                    }
-
                     if (state.watchlist.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(24.dp))
                             WatchlistRow(
                                 items = state.watchlist,
                                 onItemClick = { animeId ->
@@ -150,6 +136,7 @@ fun HomeScreen(
 
                     if (state.popular.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(24.dp))
                             AnimeRow(
                                 title = stringResource(R.string.section_popular),
                                 items = state.popular,
@@ -165,8 +152,27 @@ fun HomeScreen(
                         }
                     }
 
+                    if (state.updated.isNotEmpty()) {
+                        item {
+                            Spacer(Modifier.height(24.dp))
+                            AnimeRow(
+                                title = stringResource(R.string.section_updated),
+                                items = state.updated,
+                                onItemClick = { animeId ->
+                                    navController.navigate(
+                                        Screen.Detail.route.replace("{animeId}", animeId.toString())
+                                    )
+                                },
+                                onViewAllClick = {
+                                    navController.navigate(Screen.Category.route.replace("{category}", "Aggiornati"))
+                                }
+                            )
+                        }
+                    }
+
                     if (state.ongoing.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(24.dp))
                             AnimeRow(
                                 title = stringResource(R.string.section_ongoing),
                                 items = state.ongoing,
@@ -182,25 +188,9 @@ fun HomeScreen(
                         }
                     }
 
-                    if (state.upcoming.isNotEmpty()) {
-                        item {
-                            AnimeRow(
-                                title = stringResource(R.string.section_upcoming),
-                                items = state.upcoming,
-                                onItemClick = { animeId ->
-                                    navController.navigate(
-                                        Screen.Detail.route.replace("{animeId}", animeId.toString())
-                                    )
-                                },
-                                onViewAllClick = {
-                                    navController.navigate(Screen.Category.route.replace("{category}", "Imminenti"))
-                                }
-                            )
-                        }
-                    }
-
                     if (state.newest.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(24.dp))
                             AnimeRow(
                                 title = stringResource(R.string.section_newest),
                                 items = state.newest,
@@ -219,6 +209,7 @@ fun HomeScreen(
                     genreSections.forEach { section ->
                         if (section.items.isNotEmpty()) {
                             item {
+                                Spacer(Modifier.height(24.dp))
                                 AnimeRow(
                                     title = section.genre.name,
                                     items = section.items,

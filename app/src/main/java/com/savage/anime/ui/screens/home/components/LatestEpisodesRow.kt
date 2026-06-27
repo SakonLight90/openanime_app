@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -21,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.savage.anime.domain.models.Episode
-import com.savage.anime.utils.episodeDisplayTitle
+import com.savage.anime.utils.formatEpisodeNumber
 
 @Composable
 fun LatestEpisodesRow(
@@ -29,35 +28,34 @@ fun LatestEpisodesRow(
     onItemClick: (Int, Int) -> Unit,
     onViewAllClick: (() -> Unit)? = null
 ) {
-    Column(
-        modifier = Modifier.padding(vertical = 8.dp)
-    ) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Ultimi episodi",
                 color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             if (onViewAllClick != null) {
                 Text(
                     text = "Vedi tutti",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
+                    color = Color(0x99FFFFFF),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable { onViewAllClick() }
                 )
             }
         }
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp)
         ) {
             items(items) { episode ->
                 LatestEpisodeCard(
@@ -81,14 +79,15 @@ private fun LatestEpisodeCard(
 ) {
     Column(
         modifier = Modifier
-            .width(130.dp)
+            .width(140.dp)
             .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                .width(130.dp)
-                .height(195.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .width(140.dp)
+                .height(200.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF1A1A1A))
         ) {
             AsyncImage(
                 model = episode.anime?.image,
@@ -100,43 +99,32 @@ private fun LatestEpisodeCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
                     .align(Alignment.BottomCenter)
                     .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color(0xCC000000)
-                            )
-                        )
+                        Color(0xCC141414)
                     )
-            )
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(all = 8.dp)
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = episodeDisplayTitle(episode.number),
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        text = "Ep. ${formatEpisodeNumber(episode.number)}",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    if (episode.anime != null) {
+                        Text(
+                            text = episode.anime!!.title,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
-        }
-
-        if (episode.anime != null) {
-            Text(
-                text = episode.anime!!.title,
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                lineHeight = 17.sp,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp)
-            )
         }
     }
 }

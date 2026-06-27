@@ -117,11 +117,26 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun loadPlayer(animeId: Int, episodeId: Int) {
+        saveJob?.cancel()
+        sleepTimerJob?.cancel()
+        player?.stop()
+        player?.release()
+        player = null
+
         currentAnimeId = animeId
         currentEpisodeId = episodeId
         retryCount = 0
 
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        _uiState.value = _uiState.value.copy(
+            streamUrl = null,
+            episode = null,
+            anime = null,
+            isLoading = true,
+            error = null,
+            isNearEnd = false,
+            isPlaying = false,
+            position = 0L
+        )
 
         viewModelScope.launch {
             try {
@@ -144,6 +159,7 @@ class PlayerViewModel @Inject constructor(
                             isLoading = true,
                             error = null
                         )
+                        loadStream()
                         return@launch
                     }
                     throw Exception("Episode $episodeId not found")
@@ -161,6 +177,7 @@ class PlayerViewModel @Inject constructor(
                     isLoading = true,
                     error = null
                 )
+                loadStream()
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -281,6 +298,11 @@ class PlayerViewModel @Inject constructor(
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
                     startProgressSaving(exo)
+                } else if (state == Player.STATE_ENDED && autoPlayNext) {
+                    val next = getNextEpisode()
+                    if (next != null) {
+                        _uiState.value = _uiState.value.copy(autoNavigateToEpisode = next.id)
+                    }
                 }
             }
 
@@ -315,7 +337,7 @@ class PlayerViewModel @Inject constructor(
                     duration
                 )
 
-                val nearEnd = duration > 0 && (duration - pos) <= 15_000L
+                val nearEnd = duration > 0 && (duration - pos) <= 60_000L
                 _uiState.value = _uiState.value.copy(
                     isNearEnd = nearEnd,
                     playerPosition = pos,
@@ -495,5 +517,6 @@ data class PlayerUiState(
     val playerPosition: Long = 0L,
     val playerDuration: Long = 0L,
     val playbackSpeed: Float = 1.0f,
-    val resizeMode: Int = 0
+    val resizeMode: Int = 0,
+    val autoNavigateToEpisode: Int? = null
 )

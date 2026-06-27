@@ -1,21 +1,14 @@
 package com.savage.anime.ui.screens.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -32,20 +25,18 @@ fun WatchlistRow(
 ) {
     if (items.isEmpty()) return
 
-    Column(
-        modifier = Modifier.padding(vertical = 8.dp)
-    ) {
+    Column {
         Text(
             text = "La mia lista",
             color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            fontSize = 22.sp,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
         )
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp)
         ) {
             items(items) { anime ->
                 WatchlistCard(
@@ -64,45 +55,20 @@ private fun WatchlistCard(
 ) {
     Column(
         modifier = Modifier
-            .width(130.dp)
+            .width(140.dp)
             .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                .width(130.dp)
-                .height(195.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .width(140.dp)
+                .height(210.dp)
+                .clip(RoundedCornerShape(8.dp))
         ) {
             AsyncImage(
                 model = anime.image,
                 contentDescription = anime.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color(0xCC000000)
-                            )
-                        )
-                    )
-            )
-
-            Icon(
-                imageVector = Icons.Filled.Favorite,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(20.dp)
             )
         }
 
@@ -111,10 +77,9 @@ private fun WatchlistCard(
             color = Color.White,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            lineHeight = 17.sp,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp)
+            modifier = Modifier.padding(top = 8.dp, start = 2.dp)
         )
     }
 }

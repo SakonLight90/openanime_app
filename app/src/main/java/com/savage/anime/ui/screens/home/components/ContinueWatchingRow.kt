@@ -40,29 +40,30 @@ fun ContinueWatchingRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Continua a guardare",
                 color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold
             )
             if (onViewAllClick != null && items.isNotEmpty()) {
                 Text(
                     text = "Vedi tutti",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
+                    color = Color(0x99FFFFFF),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable { onViewAllClick() }
                 )
             }
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(items) { item ->
                 var showMenu by remember { mutableStateOf(false) }
@@ -70,14 +71,15 @@ fun ContinueWatchingRow(
                 Box {
                     Column(
                         modifier = Modifier
-                            .width(130.dp)
+                            .width(160.dp)
                             .clickable { onClick(item) }
                     ) {
                         Box(
                             modifier = Modifier
-                                .width(130.dp)
-                                .height(195.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .width(160.dp)
+                                .height(240.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF1A1A1A))
                         ) {
                             AsyncImage(
                                 model = item.animeImage,
@@ -91,14 +93,14 @@ fun ContinueWatchingRow(
                                     .align(Alignment.TopStart)
                                     .background(
                                         MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(bottomEnd = 4.dp)
+                                        RoundedCornerShape(bottomEnd = 6.dp)
                                     )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
                             ) {
                                 Text(
                                     text = "Ep. ${item.episodeNumber.toInt()}",
                                     color = Color.White,
-                                    fontSize = 11.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -107,15 +109,15 @@ fun ContinueWatchingRow(
                                 onClick = { showMenu = true },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .size(28.dp)
-                                    .padding(2.dp)
+                                    .size(32.dp)
+                                    .padding(4.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(24.dp)
+                                        .size(28.dp)
                                         .background(
                                             Color(0x88000000),
-                                            RoundedCornerShape(4.dp)
+                                            RoundedCornerShape(6.dp)
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -123,7 +125,7 @@ fun ContinueWatchingRow(
                                         imageVector = Icons.Default.MoreVert,
                                         contentDescription = null,
                                         tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
@@ -136,7 +138,7 @@ fun ContinueWatchingRow(
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(3.dp)
+                                    .height(4.dp)
                                     .align(Alignment.BottomCenter),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = Color(0xFF333333)
@@ -146,12 +148,21 @@ fun ContinueWatchingRow(
                         Text(
                             text = item.animeTitle,
                             color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 2,
-                            lineHeight = 17.sp,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp)
+                            modifier = Modifier.padding(top = 8.dp, start = 2.dp)
+                        )
+
+                        Text(
+                            text = "Ep. ${item.episodeNumber.toInt()} - Continua",
+                            color = Color(0xAAFFFFFF),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 2.dp)
                         )
                     }
 
