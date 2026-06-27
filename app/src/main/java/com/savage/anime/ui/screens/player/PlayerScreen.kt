@@ -107,16 +107,16 @@ fun PlayerScreen(
     )
 
     fun hideSystemUi() {
-        activity?.window?.let { window ->
-            window.insetsController?.let { c ->
-                c.hide(WindowInsets.Type.systemBars())
-                c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
+        activity?.window?.let { w ->
+            w.insetsController?.hide(WindowInsets.Type.systemBars())
+            w.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 
+    @Suppress("DEPRECATION")
     fun applyCutoutMode() {
         activity?.window?.let { w ->
+            w.setDecorFitsSystemWindows(false)
             w.attributes = w.attributes.apply {
                 layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             }
@@ -338,6 +338,9 @@ fun PlayerScreen(
                         },
                         update = { view ->
                             view.setResizeMode(uiState.resizeMode)
+                            if (uiState.videoAspectRatio > 0f) {
+                                view.setAspectRatio(uiState.videoAspectRatio)
+                            }
                             if (view.childCount > 0) {
                                 val tv = view.getChildAt(0) as TextureView
                                 viewModel.getExoPlayer()?.setVideoTextureView(tv)

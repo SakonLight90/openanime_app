@@ -19,8 +19,11 @@ interface AnimeDao {
     @Query("SELECT * FROM anime_cache WHERE category = :category")
     suspend fun getByCategoryList(category: String): List<AnimeCacheEntity>
 
-    @Query("SELECT * FROM anime_cache WHERE id = :id")
+    @Query("SELECT * FROM anime_cache WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): AnimeCacheEntity?
+
+    @Query("SELECT DISTINCT category FROM anime_cache WHERE id = :id")
+    suspend fun getCategoriesByAnimeId(id: Int): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(animes: List<AnimeCacheEntity>)

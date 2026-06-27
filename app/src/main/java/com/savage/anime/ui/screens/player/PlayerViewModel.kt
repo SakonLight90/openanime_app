@@ -299,9 +299,13 @@ class PlayerViewModel @Inject constructor(
                 if (state == Player.STATE_READY) {
                     startProgressSaving(exo)
                 } else if (state == Player.STATE_ENDED && autoPlayNext) {
-                    val next = getNextEpisode()
-                    if (next != null) {
-                        _uiState.value = _uiState.value.copy(autoNavigateToEpisode = next.id)
+                    val dur = exo.duration
+                    val pos = exo.currentPosition
+                    if (dur > 10_000L && pos >= dur * 0.9) {
+                        val next = getNextEpisode()
+                        if (next != null) {
+                            _uiState.value = _uiState.value.copy(autoNavigateToEpisode = next.id)
+                        }
                     }
                 }
             }
@@ -312,6 +316,13 @@ class PlayerViewModel @Inject constructor(
 
             override fun onPlayerError(error: PlaybackException) {
                 handleStreamError()
+            }
+
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                val ratio = if (videoSize.width > 0 && videoSize.height > 0)
+                    videoSize.width.toFloat() / videoSize.height.toFloat()
+                else 0f
+                _uiState.value = _uiState.value.copy(videoAspectRatio = ratio)
             }
         }
         playerListener = listener
@@ -518,5 +529,6 @@ data class PlayerUiState(
     val playerDuration: Long = 0L,
     val playbackSpeed: Float = 1.0f,
     val resizeMode: Int = 0,
+    val videoAspectRatio: Float = 0f,
     val autoNavigateToEpisode: Int? = null
 )

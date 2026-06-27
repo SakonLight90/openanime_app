@@ -39,7 +39,7 @@ import com.savage.anime.data.local.util.Converters
         CustomListEntity::class,
         CustomListItemEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -105,6 +105,35 @@ abstract class AppDatabase : RoomDatabase() {
                         PRIMARY KEY(query, anime_id)
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS anime_cache_new (
+                        id INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        synopsis TEXT,
+                        image TEXT NOT NULL,
+                        cover_image TEXT,
+                        banner_image TEXT,
+                        type TEXT NOT NULL,
+                        episode_count INTEGER NOT NULL DEFAULT 0,
+                        rating REAL NOT NULL DEFAULT 0,
+                        release_date TEXT,
+                        status TEXT,
+                        is_dub INTEGER NOT NULL DEFAULT 0,
+                        language TEXT,
+                        genres TEXT,
+                        category TEXT NOT NULL DEFAULT '',
+                        updated_at INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(id, category)
+                    )
+                """.trimIndent())
+                db.execSQL("INSERT INTO anime_cache_new SELECT * FROM anime_cache")
+                db.execSQL("DROP TABLE anime_cache")
+                db.execSQL("ALTER TABLE anime_cache_new RENAME TO anime_cache")
             }
         }
 

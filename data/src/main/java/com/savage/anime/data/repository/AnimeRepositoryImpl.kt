@@ -81,8 +81,12 @@ class AnimeRepositoryImpl(
                     emptyList()
                 }
                 val enriched = remote.copy(episodes = episodes)
-                val existingCategory = animeDao.getById(id)?.category ?: ""
-                animeDao.insert(enriched.toCacheEntity(category = existingCategory))
+                val categories = animeDao.getCategoriesByAnimeId(id)
+                if (categories.isEmpty()) {
+                    animeDao.insert(enriched.toCacheEntity(category = ""))
+                } else {
+                    animeDao.insertAll(categories.map { enriched.toCacheEntity(category = it) })
+                }
                 if (episodes.isNotEmpty()) {
                     episodeDao.insertAll(episodes.map { it.toCacheEntity(id) })
                 }
@@ -157,18 +161,20 @@ class AnimeRepositoryImpl(
     override suspend fun fetchHome() {
         try {
             val home = api.getHome()
-            animeDao.insertAll(home.hero.map { it.toCacheEntity("trending") })
-        animeDao.insertAll(home.popular.map { it.toCacheEntity("popular") })
-        animeDao.insertAll(home.ongoing.map { it.toCacheEntity("ongoing") })
-        animeDao.insertAll(home.upcoming.map { it.toCacheEntity("upcoming") })
-        animeDao.insertAll(home.newest.map { it.toCacheEntity("newest") })
-        episodeDao.insertAll(
-            home.latestEpisodes.map { it.toCacheEntity(animeId = it.anime?.id ?: 0) }
-        )
+            val animeEntities = mutableListOf<AnimeCacheEntity>()
+            animeEntities.addAll(home.hero.map { it.toCacheEntity("trending") })
+            animeEntities.addAll(home.popular.map { it.toCacheEntity("popular") })
+            animeEntities.addAll(home.ongoing.map { it.toCacheEntity("ongoing") })
+            animeEntities.addAll(home.upcoming.map { it.toCacheEntity("upcoming") })
+            animeEntities.addAll(home.newest.map { it.toCacheEntity("newest") })
             try {
                 val updated = api.getUpdated()
-                animeDao.insertAll(updated.map { it.toCacheEntity("updated") })
+                animeEntities.addAll(updated.map { it.toCacheEntity("updated") })
             } catch (_: Exception) { }
+            animeDao.insertAll(animeEntities)
+            episodeDao.insertAll(
+                home.latestEpisodes.map { it.toCacheEntity(animeId = it.anime?.id ?: 0) }
+            )
         } catch (_: Exception) { }
     }
 

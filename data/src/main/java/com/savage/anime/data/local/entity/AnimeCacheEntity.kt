@@ -2,11 +2,10 @@ package com.savage.anime.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "anime_cache")
+@Entity(tableName = "anime_cache", primaryKeys = ["id", "category"])
 data class AnimeCacheEntity(
-    @PrimaryKey val id: Int,
+    val id: Int,
     val title: String,
     val synopsis: String?,
     val image: String,

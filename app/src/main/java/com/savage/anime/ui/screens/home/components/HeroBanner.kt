@@ -45,7 +45,7 @@ fun HeroBanner(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.6f)
+                .height(450.dp)
         ) { page ->
             val anime = animeList[page]
             Box(
