@@ -18,7 +18,6 @@ import android.util.Rational
 
 import android.view.TextureView
 import android.view.ViewGroup
-import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -108,7 +107,7 @@ fun PlayerScreen(
 
     fun hideSystemUi() {
         activity?.window?.let { w ->
-            w.insetsController?.hide(WindowInsets.Type.systemBars())
+            w.insetsController?.hide(android.view.WindowInsets.Type.systemBars())
             w.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
@@ -120,6 +119,7 @@ fun PlayerScreen(
             w.attributes = w.attributes.apply {
                 layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             }
+            w.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
         }
     }
 
@@ -156,7 +156,7 @@ fun PlayerScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            activity?.window?.insetsController?.show(WindowInsets.Type.systemBars())
+            activity?.window?.insetsController?.show(android.view.WindowInsets.Type.systemBars())
         }
     }
 
@@ -341,6 +341,7 @@ fun PlayerScreen(
                             if (uiState.videoAspectRatio > 0f) {
                                 view.setAspectRatio(uiState.videoAspectRatio)
                             }
+                            view.requestLayout()
                             if (view.childCount > 0) {
                                 val tv = view.getChildAt(0) as TextureView
                                 viewModel.getExoPlayer()?.setVideoTextureView(tv)
@@ -397,9 +398,10 @@ fun PlayerScreen(
                                                 viewModel.togglePlayPause()
                                                 showUi = wasPlaying
                                                 showCenterPlayPause = true
+                                                hideSystemUi()
                                             } else {
                                                 showUi = !showUi
-                                                if (!showUi) hideSystemUi()
+                                                hideSystemUi()
                                             }
                                         }
                                     }
@@ -450,12 +452,13 @@ fun PlayerScreen(
                                     }
                                 }
 
-                                IconButton(onClick = { screenLocked = true; showUi = false; showLockOverlay = true; activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED }) {
+                                IconButton(onClick = { screenLocked = true; showUi = false; showLockOverlay = true; activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED; hideSystemUi() }) {
                                     Icon(Icons.Default.Lock, contentDescription = "Blocca", tint = Color.White)
                                 }
                                 IconButton(onClick = {
                                     viewModel.savePositionOnly()
                                     enterPiP(context, activity, uiState.isPlaying)
+                                    hideSystemUi()
                                 }) {
                                     Icon(Icons.Default.PictureInPictureAlt, contentDescription = "PiP", tint = Color.White)
                                 }
@@ -591,7 +594,7 @@ fun PlayerScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    IconButton(onClick = { showEpisodeList = true }) {
+                                    IconButton(onClick = { showEpisodeList = true; hideSystemUi() }) {
                                         Icon(
                                             Icons.AutoMirrored.Filled.List,
                                             contentDescription = "Episodi",
@@ -600,7 +603,7 @@ fun PlayerScreen(
                                         )
                                     }
 
-                                    IconButton(onClick = { viewModel.skipBackward() }) {
+                                    IconButton(onClick = { viewModel.skipBackward(); hideSystemUi() }) {
                                         Icon(
                                             Icons.Default.SkipPrevious,
                                             contentDescription = "Indietro 10s",
@@ -609,7 +612,7 @@ fun PlayerScreen(
                                         )
                                     }
 
-                                    IconButton(onClick = { viewModel.togglePlayPause() }) {
+                                    IconButton(onClick = { viewModel.togglePlayPause(); hideSystemUi() }) {
                                         Icon(
                                             imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                             contentDescription = null,
@@ -618,7 +621,7 @@ fun PlayerScreen(
                                         )
                                     }
 
-                                    IconButton(onClick = { viewModel.skipForward() }) {
+                                    IconButton(onClick = { viewModel.skipForward(); hideSystemUi() }) {
                                         Icon(
                                             Icons.Default.SkipNext,
                                             contentDescription = "Avanti 10s",
@@ -629,7 +632,7 @@ fun PlayerScreen(
 
                                     var showSpeedMenu by remember { mutableStateOf(false) }
                                     Box {
-                                        IconButton(onClick = { showSpeedMenu = true }) {
+                                        IconButton(onClick = { showSpeedMenu = true; hideSystemUi() }) {
                                             Text(
                                                 "${uiState.playbackSpeed}x",
                                                 color = MaterialTheme.colorScheme.primary,
@@ -660,7 +663,7 @@ fun PlayerScreen(
 
                                     var showSleepTimerMenu by remember { mutableStateOf(false) }
                                     Box {
-                                        IconButton(onClick = { showSleepTimerMenu = true }) {
+                                        IconButton(onClick = { showSleepTimerMenu = true; hideSystemUi() }) {
                                             Text(
                                                 if (sleepTimer.isActive) "${sleepTimer.remainingSeconds / 60}m" else "\u23F0",
                                                 fontSize = 14.sp,
@@ -690,7 +693,7 @@ fun PlayerScreen(
                                     val resizeLabels = listOf("Adatta", "Riempi", "Zoom")
                                     var showResizeMenu by remember { mutableStateOf(false) }
                                     Box {
-                                        IconButton(onClick = { showResizeMenu = true }) {
+                                        IconButton(onClick = { showResizeMenu = true; hideSystemUi() }) {
                                             Icon(
                                                 Icons.Default.AspectRatio,
                                                 contentDescription = "Ridimensiona",
@@ -767,6 +770,7 @@ fun PlayerScreen(
                                         ) {
                                             popUpTo("player/$animeId/$episodeId") { inclusive = true }
                                         }
+                                        hideSystemUi()
                                     },
                                 shape = RoundedCornerShape(8.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
@@ -801,13 +805,18 @@ fun PlayerScreen(
                 }
             }
 
-            if (showEpisodeList) {
+if (showEpisodeList) {
                 val episodes = uiState.anime?.episodes ?: emptyList()
                 val currentEpId = episodes.indexOfFirst { it.id == episodeId }
+                val sheetState = rememberModalBottomSheetState()
+                LaunchedEffect(showEpisodeList) {
+                    if (showEpisodeList) sheetState.expand()
+                }
                 ModalBottomSheet(
                     onDismissRequest = { showEpisodeList = false; hideSystemUi() },
                     containerColor = Color(0xFF1A1A1A),
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) },
+                    sheetState = sheetState
                 ) {
                     LazyColumn(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)

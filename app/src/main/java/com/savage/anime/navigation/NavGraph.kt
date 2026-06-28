@@ -132,7 +132,7 @@ fun NavGraph(modifier: Modifier = Modifier) {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = if (currentRoute == Screen.Player.route) Modifier else Modifier.padding(innerPadding)
         ) {
 
             composable(
