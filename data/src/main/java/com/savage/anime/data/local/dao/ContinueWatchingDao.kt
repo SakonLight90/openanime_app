@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 interface ContinueWatchingDao {
 
     @Query("""
-        SELECT 
+        SELECT DISTINCT
             c.anime_id,
             c.episode_id,
             c.position_ms,

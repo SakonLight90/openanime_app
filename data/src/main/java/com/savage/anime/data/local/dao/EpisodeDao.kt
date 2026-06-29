@@ -18,7 +18,7 @@ interface EpisodeDao {
     fun getByAnimeId(animeId: Int): Flow<List<EpisodeCacheEntity>>
 
     @Query("""
-        SELECT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
+        SELECT DISTINCT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
                a.title AS animeTitle, a.image AS animeImage
         FROM episodes_cache e
         INNER JOIN anime_cache a ON e.anime_id = a.id
