@@ -39,7 +39,7 @@ import com.savage.anime.data.local.util.Converters
         CustomListEntity::class,
         CustomListItemEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -131,9 +131,35 @@ abstract class AppDatabase : RoomDatabase() {
                         PRIMARY KEY(id, category)
                     )
                 """.trimIndent())
-                db.execSQL("INSERT INTO anime_cache_new SELECT * FROM anime_cache")
+                db.execSQL("""
+                    INSERT INTO anime_cache_new (id, title, synopsis, image, cover_image, banner_image, type, episode_count, rating, release_date, status, is_dub, language, genres, category, updated_at)
+                    SELECT id, title, synopsis, image, cover_image, banner_image, type, episode_count, rating, release_date, status, is_dub, language, genres, category, updated_at FROM anime_cache
+                """.trimIndent())
                 db.execSQL("DROP TABLE anime_cache")
                 db.execSQL("ALTER TABLE anime_cache_new RENAME TO anime_cache")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE continue_watching RENAME COLUMN positionMs TO position_ms")
+                db.execSQL("ALTER TABLE continue_watching RENAME COLUMN lastWatchedAt TO last_watched_at")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS language_preferences (
+                        anime_id INTEGER NOT NULL,
+                        preferred_version_id INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(anime_id)
+                    )
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE continue_watching ADD COLUMN anime_title TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE continue_watching ADD COLUMN anime_image TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE continue_watching ADD COLUMN episode_number REAL NOT NULL DEFAULT 0")
             }
         }
 

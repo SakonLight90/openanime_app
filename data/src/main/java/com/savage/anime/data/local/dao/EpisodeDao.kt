@@ -29,6 +29,15 @@ interface EpisodeDao {
     @Query("SELECT * FROM episodes_cache WHERE id = :episodeId")
     suspend fun getById(episodeId: Int): EpisodeCacheEntity?
 
+    @Query("""
+        SELECT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
+               a.title AS animeTitle, a.image AS animeImage
+        FROM episodes_cache e
+        INNER JOIN anime_cache a ON e.anime_id = a.id
+        WHERE e.id = :episodeId
+    """)
+    suspend fun getByIdWithAnime(episodeId: Int): EpisodeWithAnime?
+
     @Query("DELETE FROM episodes_cache WHERE anime_id = :animeId")
     suspend fun clearByAnimeId(animeId: Int)
 

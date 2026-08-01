@@ -9,8 +9,11 @@ import androidx.room.Entity
 )
 data class ContinueWatchingEntity(
     @ColumnInfo(name = "anime_id") val animeId: Int,
-    @ColumnInfo(name = "episode_id") val episodeId: Int,
-    @ColumnInfo(name = "position_ms") val positionMs: Long,
-    @ColumnInfo(name = "duration_ms") val durationMs: Long = 0L,
-    @ColumnInfo(name = "last_watched_at") val lastWatchedAt: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "episode_id", defaultValue = "0") val episodeId: Int,
+    @ColumnInfo(name = "position_ms", defaultValue = "0") val positionMs: Long,
+    @ColumnInfo(name = "duration_ms", defaultValue = "0") val durationMs: Long = 0L,
+    @ColumnInfo(name = "last_watched_at", defaultValue = "0") val lastWatchedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "anime_title", defaultValue = "''") val animeTitle: String = "",
+    @ColumnInfo(name = "anime_image", defaultValue = "''") val animeImage: String = "",
+    @ColumnInfo(name = "episode_number", defaultValue = "0") val episodeNumber: Double = 0.0
 )

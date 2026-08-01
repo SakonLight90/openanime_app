@@ -12,14 +12,14 @@ data class AnimeCacheEntity(
     @ColumnInfo(name = "cover_image") val coverImage: String?,
     @ColumnInfo(name = "banner_image") val bannerImage: String?,
     val type: String,
-    @ColumnInfo(name = "episode_count") val episodeCount: Int,
-    val rating: Float,
+    @ColumnInfo(name = "episode_count", defaultValue = "0") val episodeCount: Int,
+    @ColumnInfo(name = "rating", defaultValue = "0") val rating: Float,
     @ColumnInfo(name = "release_date") val releaseDate: String?,
     val status: String?,
-    @ColumnInfo(name = "is_dub") val isDub: Boolean,
+    @ColumnInfo(name = "is_dub", defaultValue = "0") val isDub: Boolean,
     val language: String?,
     val genres: String?,
-    val category: String = "",
-    @ColumnInfo(name = "updated_at")
+    @ColumnInfo(name = "category", defaultValue = "''") val category: String = "",
+    @ColumnInfo(name = "updated_at", defaultValue = "0")
     val updatedAt: Long = System.currentTimeMillis()
 )

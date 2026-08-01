@@ -60,6 +60,7 @@ interface LocalUserDataRepository {
     suspend fun clearWatchHistory()
 
     fun getCustomLists(): Flow<List<CustomList>>
+    suspend fun getCustomList(listId: Int): CustomList?
     suspend fun createCustomList(name: String): Int
     suspend fun deleteCustomList(listId: Int)
     suspend fun renameCustomList(listId: Int, name: String)

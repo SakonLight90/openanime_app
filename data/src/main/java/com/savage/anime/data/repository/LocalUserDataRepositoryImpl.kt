@@ -15,6 +15,7 @@ import com.savage.anime.data.local.entity.LanguagePreferenceEntity
 import com.savage.anime.data.local.entity.WatchHistoryEntity
 import com.savage.anime.data.local.entity.WatchlistEntity
 import com.savage.anime.data.mapper.toDomain
+import com.savage.anime.data.mapper.toDomainEpisode
 import com.savage.anime.domain.models.Anime
 import com.savage.anime.domain.models.ContinueWatchingItem
 import com.savage.anime.domain.models.CustomList
@@ -56,13 +57,18 @@ class LocalUserDataRepositoryImpl @Inject constructor(
             .map { list -> list.map { it.toDomain() } }
 
     override suspend fun savePosition(animeId: Int, episodeId: Int, positionMs: Long, durationMs: Long) {
+        val anime = animeDao.getById(animeId)
+        val episode = episodeDao.getById(episodeId)
         continueWatchingDao.save(
             com.savage.anime.data.local.entity.ContinueWatchingEntity(
                 animeId = animeId,
                 episodeId = episodeId,
                 positionMs = positionMs,
                 durationMs = durationMs,
-                lastWatchedAt = System.currentTimeMillis()
+                lastWatchedAt = System.currentTimeMillis(),
+                animeTitle = anime?.title ?: "",
+                animeImage = anime?.image ?: "",
+                episodeNumber = episode?.number ?: 0.0
             )
         )
     }
@@ -81,8 +87,8 @@ class LocalUserDataRepositoryImpl @Inject constructor(
 
     override suspend fun getLastWatchedEpisode(animeId: Int): Episode? {
         val episodeId = continueWatchingDao.getLastWatchedEpisodeId(animeId) ?: return null
-        val entity = episodeDao.getById(episodeId) ?: return null
-        return entity.toDomain()
+        val entity = episodeDao.getByIdWithAnime(episodeId) ?: return null
+        return entity.toDomainEpisode()
     }
 
     override suspend fun saveLanguagePreference(animeId: Int, preferredVersionId: Int) {
@@ -116,7 +122,21 @@ class LocalUserDataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markEpisodeAsWatched(animeId: Int, episodeId: Int) {
-        savePosition(animeId, episodeId, 1L)
+        val existing = continueWatchingDao.getPosition(animeId, episodeId)
+        val anime = animeDao.getById(animeId)
+        val episode = episodeDao.getById(episodeId)
+        continueWatchingDao.save(
+            com.savage.anime.data.local.entity.ContinueWatchingEntity(
+                animeId = animeId,
+                episodeId = episodeId,
+                positionMs = existing?.positionMs ?: 1L,
+                durationMs = existing?.durationMs ?: 0L,
+                lastWatchedAt = System.currentTimeMillis(),
+                animeTitle = anime?.title ?: "",
+                animeImage = anime?.image ?: "",
+                episodeNumber = episode?.number ?: 0.0
+            )
+        )
     }
 
     override suspend fun markEpisodeAsUnwatched(animeId: Int, episodeId: Int) {
@@ -160,6 +180,19 @@ class LocalUserDataRepositoryImpl @Inject constructor(
                     )
                 }
             }
+
+    override suspend fun getCustomList(listId: Int): CustomList? {
+        val entity = customListDao.getListById(listId) ?: return null
+        val items = customListDao.getItems(listId).mapNotNull { item ->
+            animeDao.getById(item.animeId)?.toDomain()
+        }
+        return CustomList(
+            id = entity.id,
+            name = entity.name,
+            createdAt = entity.createdAt,
+            items = items
+        )
+    }
 
     override suspend fun createCustomList(name: String): Int {
         return customListDao.createList(CustomListEntity(name = name)).toInt()

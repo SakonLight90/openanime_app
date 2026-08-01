@@ -98,6 +98,9 @@ fun PlayerScreen(
     var showSkipText by remember { mutableStateOf<String?>(null) }
     var totalSkipAmount by remember { mutableIntStateOf(0) }
     var skipForwardAfterNearEnd by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isNearEnd) {
+        if (!uiState.isNearEnd) skipForwardAfterNearEnd = false
+    }
     var playerViewReady by remember { mutableStateOf(false) }
     var pipResumeTrigger by remember { mutableIntStateOf(0) }
     val uiAlpha by animateFloatAsState(

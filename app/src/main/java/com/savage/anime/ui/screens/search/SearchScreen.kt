@@ -141,7 +141,7 @@ fun SearchScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val currentYear = 2026
+                    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                     val yearOptions = buildList {
                         add(null to "Tutti")
                         for (y in currentYear downTo 1980 step 5) {

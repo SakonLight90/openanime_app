@@ -9,6 +9,6 @@ data class CustomListEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    @ColumnInfo(name = "created_at")
+    @ColumnInfo(name = "created_at", defaultValue = "0")
     val createdAt: Long = System.currentTimeMillis()
 )

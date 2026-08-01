@@ -1,5 +1,6 @@
 package com.savage.anime.ui.screens.customlists
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,7 +42,7 @@ fun CustomListDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Lista", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(uiState.listName.ifEmpty { "Lista" }, color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro", tint = Color.White)
@@ -56,7 +57,7 @@ fun CustomListDetailScreen(
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
-        } else if (uiState.animeIds.isEmpty()) {
+        } else if (uiState.items.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text("Lista vuota", color = Color(0xFF666666), fontSize = 14.sp)
             }
@@ -67,10 +68,10 @@ fun CustomListDetailScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(uiState.animeIds, key = { it }) { animeId ->
+                items(uiState.items, key = { it.id }) { anime ->
                     Card(
                         onClick = {
-                            navController.navigate(Screen.Detail.route.replace("{animeId}", animeId.toString()))
+                            navController.navigate(Screen.Detail.route.replace("{animeId}", anime.id.toString()))
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(4.dp),
@@ -78,23 +79,34 @@ fun CustomListDetailScreen(
                     ) {
                         Box {
                             AsyncImage(
-                                model = "https://img.animeworld.so/img/default.jpg",
-                                contentDescription = null,
+                                model = anime.image,
+                                contentDescription = anime.title,
                                 modifier = Modifier.fillMaxWidth().height(150.dp),
                                 contentScale = ContentScale.Crop
+                            )
+                            Text(
+                                text = anime.title,
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                maxLines = 2,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .fillMaxWidth()
+                                    .background(Color(0x99000000))
+                                    .padding(horizontal = 6.dp, vertical = 4.dp)
                             )
                             Row(
                                 modifier = Modifier.align(Alignment.TopEnd)
                             ) {
                                 if (uiState.otherLists.isNotEmpty()) {
                                     IconButton(
-                                        onClick = { viewModel.showMoveDialog(animeId) }
+                                        onClick = { viewModel.showMoveDialog(anime.id) }
                                     ) {
                                         Text("→", color = Color.White, fontSize = 16.sp)
                                     }
                                 }
                                 IconButton(
-                                    onClick = { viewModel.removeItem(listId, animeId) }
+                                    onClick = { viewModel.removeItem(listId, anime.id) }
                                 ) {
                                     Icon(Icons.Default.Delete, contentDescription = "Rimuovi", tint = Color.White, modifier = Modifier.size(20.dp))
                                 }

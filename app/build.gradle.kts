@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.savage.anime"
-        minSdk = 30
+        minSdk = 31
         targetSdk = 36
         versionCode = 6
         versionName = "1.0.6a"

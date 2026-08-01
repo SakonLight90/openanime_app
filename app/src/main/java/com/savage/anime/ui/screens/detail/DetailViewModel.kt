@@ -8,6 +8,7 @@ import com.savage.anime.domain.models.Episode
 import com.savage.anime.domain.repository.AnimeRepository
 import com.savage.anime.domain.repository.LocalUserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -40,12 +41,15 @@ class DetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState
 
+    private var loadJob: Job? = null
+
     fun loadDetail(id: Int) {
         _uiState.value = _uiState.value.copy(isLoading = true, currentDisplayId = id)
         if (_uiState.value.currentAnimeId == 0) {
             _uiState.value = _uiState.value.copy(currentAnimeId = id)
         }
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             try {
                 animeRepository.getDetail(id).collect { detail ->
                     val lang = detail.language.ifEmpty { "sub" }
@@ -93,6 +97,8 @@ class DetailViewModel @Inject constructor(
                         error = null
                     )
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -192,7 +198,7 @@ class DetailViewModel @Inject constructor(
                 currentDisplayId = _uiState.value.currentAnimeId
             )
             viewModelScope.launch {
-                localUserDataRepository.saveLanguagePreference(anime.id, -1)
+                localUserDataRepository.saveLanguagePreference(_uiState.value.currentAnimeId, -1)
             }
             if (needsReload) {
                 loadDetail(_uiState.value.currentAnimeId)
@@ -205,7 +211,7 @@ class DetailViewModel @Inject constructor(
                 currentDisplayId = versionId
             )
             viewModelScope.launch {
-                localUserDataRepository.saveLanguagePreference(anime.id, versionId)
+                localUserDataRepository.saveLanguagePreference(_uiState.value.currentAnimeId, versionId)
             }
             loadDetail(versionId)
         }

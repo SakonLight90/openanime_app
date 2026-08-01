@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 data class SleepTimerState(
@@ -116,6 +117,11 @@ class PlayerViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(playbackSpeed = speed)
     }
 
+    private suspend fun getDetailWithEpisodes(animeId: Int): com.savage.anime.domain.models.AnimeDetail? =
+        withTimeoutOrNull(10_000) {
+            animeRepository.getDetail(animeId).first { d -> d.episodes.isNotEmpty() }
+        }
+
     fun loadPlayer(animeId: Int, episodeId: Int) {
         saveJob?.cancel()
         sleepTimerJob?.cancel()
@@ -140,17 +146,15 @@ class PlayerViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val detail = animeRepository.getDetail(animeId).first { d ->
-                    d.episodes.isNotEmpty()
-                }
-                val episode = detail.episodes.firstOrNull { it.id == episodeId }
+                val detail = getDetailWithEpisodes(animeId)
+                val episode = detail?.episodes?.firstOrNull { it.id == episodeId }
 
                 if (episode == null) {
                     val fallback = animeRepository.getEpisodeById(episodeId)
                     if (fallback != null) {
                         currentToken = fallback.token
-                        currentAnimeTitle = fallback.anime?.title ?: detail.title
-                        currentAnimeImage = fallback.anime?.image ?: detail.coverImage
+                        currentAnimeTitle = fallback.anime?.title ?: detail?.title ?: ""
+                        currentAnimeImage = fallback.anime?.image ?: detail?.coverImage ?: ""
                         val position = localUserDataRepository.getPosition(animeId, episodeId) ?: 0L
                         _uiState.value = _uiState.value.copy(
                             anime = detail,
@@ -162,7 +166,11 @@ class PlayerViewModel @Inject constructor(
                         loadStream()
                         return@launch
                     }
-                    throw Exception("Episode $episodeId not found")
+                    _uiState.value = _uiState.value.copy(
+                        error = if (detail == null) "Nessun episodio disponibile" else "Episodio non trovato",
+                        isLoading = false
+                    )
+                    return@launch
                 }
 
                 currentToken = episode.token
@@ -241,6 +249,8 @@ class PlayerViewModel @Inject constructor(
             isLoading = true
         )
 
+        saveJob?.cancel()
+        saveJob = null
         playerListener = null
         player?.release()
         player = null
@@ -255,9 +265,8 @@ class PlayerViewModel @Inject constructor(
     private fun refreshTokenAndRetry() {
         viewModelScope.launch {
             try {
-                val detail = animeRepository.getDetail(currentAnimeId).first { d ->
-                    d.episodes.isNotEmpty()
-                }
+                val detail = getDetailWithEpisodes(currentAnimeId)
+                    ?: return@launch
                 val episode = detail.episodes.firstOrNull { it.id == currentEpisodeId }
                     ?: animeRepository.getEpisodeById(currentEpisodeId) ?: return@launch
                 currentToken = episode.token
@@ -336,10 +345,14 @@ class PlayerViewModel @Inject constructor(
             while (true) {
                 delay(1000)
 
-                val pos = player.currentPosition
+                val currentPlayer = this@PlayerViewModel.player
+                if (currentPlayer == null || currentPlayer !== player) break
+
+                val pos = currentPlayer.currentPosition
                 if (pos <= 0) continue
 
-                val duration = player.duration
+                val duration = currentPlayer.duration
+                if (duration <= 0) continue
 
                 localUserDataRepository.savePosition(
                     currentAnimeId,
@@ -348,7 +361,7 @@ class PlayerViewModel @Inject constructor(
                     duration
                 )
 
-                val nearEnd = duration > 0 && (duration - pos) <= 60_000L
+                val nearEnd = (duration - pos) <= 60_000L
                 _uiState.value = _uiState.value.copy(
                     isNearEnd = nearEnd,
                     playerPosition = pos,
@@ -368,9 +381,11 @@ class PlayerViewModel @Inject constructor(
         saveJob?.cancel()
         viewModelScope.launch {
             val pos = exo.currentPosition
-            val dur = exo.duration
+            val duration = exo.duration
             if (pos > 0) {
-                localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, dur)
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
+                localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, finalDuration)
                 addToWatchHistory()
             }
         }
@@ -423,11 +438,15 @@ class PlayerViewModel @Inject constructor(
         val pos = player?.currentPosition ?: 0L
 
         if (pos > 0) {
+            val duration = player?.duration ?: 0L
             viewModelScope.launch {
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
                 localUserDataRepository.savePosition(
                     currentAnimeId,
                     currentEpisodeId,
-                    pos
+                    pos,
+                    finalDuration
                 )
             }
         }
@@ -438,12 +457,15 @@ class PlayerViewModel @Inject constructor(
     fun savePositionOnly() {
         val pos = player?.currentPosition ?: 0L
         if (pos > 0) {
+            val duration = player?.duration ?: 0L
             viewModelScope.launch {
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
                 localUserDataRepository.savePosition(
                     currentAnimeId,
                     currentEpisodeId,
                     pos,
-                    player?.duration ?: 0L
+                    finalDuration
                 )
                 addToWatchHistory()
             }

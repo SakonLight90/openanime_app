@@ -154,8 +154,8 @@ class AnimeRepositoryImpl(
     }
 
     override suspend fun getEpisodeById(episodeId: Int): Episode? {
-        val entity = episodeDao.getById(episodeId) ?: return null
-        return entity.toDomain()
+        val entity = episodeDao.getByIdWithAnime(episodeId) ?: return null
+        return entity.toDomainEpisode()
     }
 
     override suspend fun fetchHome() {

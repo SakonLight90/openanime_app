@@ -55,25 +55,26 @@ fun UpdateRequiredScreen(state: VersionCheckState) {
 
                 Spacer(Modifier.height(32.dp))
 
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.updateUrl))
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text(
-                        text = "Scarica aggiornamento",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (!state.updateUrl.isNullOrBlank()) {
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.updateUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text(
+                            text = "Scarica aggiornamento",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
                 }
-
-                Spacer(Modifier.height(12.dp))
-
                 Text(
                     text = "GitHub: github.com/sakonlight90/openanime_app",
                     color = MaterialTheme.colorScheme.primary,

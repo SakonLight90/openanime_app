@@ -18,13 +18,10 @@ interface ContinueWatchingDao {
             c.position_ms,
             c.duration_ms,
             c.last_watched_at,
-            a.title as animeTitle,
-            a.image as animeImage,
-            e.number as episodeNumber,
-            e.title as episodeTitle
+            c.anime_title,
+            c.anime_image,
+            c.episode_number
         FROM continue_watching c
-        INNER JOIN anime_cache a ON c.anime_id = a.id
-        INNER JOIN episodes_cache e ON c.episode_id = e.id
         INNER JOIN (
             SELECT c2.anime_id, MAX(c2.last_watched_at) as max_watched
             FROM continue_watching c2

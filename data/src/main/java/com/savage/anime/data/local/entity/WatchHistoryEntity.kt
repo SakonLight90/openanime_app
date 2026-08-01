@@ -12,6 +12,6 @@ data class WatchHistoryEntity(
     @ColumnInfo(name = "episode_id") val episodeId: Int,
     @ColumnInfo(name = "anime_title") val animeTitle: String,
     @ColumnInfo(name = "anime_image") val animeImage: String,
-    @ColumnInfo(name = "episode_number") val episodeNumber: Double,
-    @ColumnInfo(name = "watched_at") val watchedAt: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "episode_number", defaultValue = "0") val episodeNumber: Double,
+    @ColumnInfo(name = "watched_at", defaultValue = "0") val watchedAt: Long = System.currentTimeMillis()
 )

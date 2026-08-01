@@ -15,7 +15,8 @@ interface WatchlistDao {
         """
         SELECT a.* FROM anime_cache a
         INNER JOIN watchlist w ON a.id = w.anime_id
-        ORDER BY w.added_at DESC
+        GROUP BY a.id
+        ORDER BY MAX(w.added_at) DESC
         """
     )
     fun getWatchlist(): Flow<List<AnimeCacheEntity>>

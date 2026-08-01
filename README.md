@@ -23,7 +23,7 @@ App per lo streaming di anime.
 
 [Scarica l'ultima versione](https://github.com/sakonlight90/openanime_app/releases/latest)
 
-**Requisiti:** Android 11.0 (API 30) o superiore.
+**Requisiti:** Android 12.0 (API 31) o superiore.
 
 ## Installazione
 

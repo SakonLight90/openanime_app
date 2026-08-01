@@ -1,5 +1,6 @@
 package com.savage.anime.ui.screens.genres
 
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,7 +67,7 @@ fun GenresScreen(
                                 colors = CardDefaults.cardColors(containerColor = Color(0xFF222222)),
                                 onClick = {
                                     navController.navigate(
-                                        "genre-anime/${genre.id}/${genre.name}"
+                                        "genre-anime/${genre.id}/${Uri.encode(genre.name)}"
                                     )
                                 }
                             ) {

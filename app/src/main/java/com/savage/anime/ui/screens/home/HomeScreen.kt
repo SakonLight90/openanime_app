@@ -1,5 +1,6 @@
 package com.savage.anime.ui.screens.home
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -222,7 +223,7 @@ fun HomeScreen(
                                         navController.navigate(
                                             Screen.GenreAnime.route
                                                 .replace("{genreId}", section.genre.id.toString())
-                                                .replace("{genreName}", section.genre.name)
+                                                .replace("{genreName}", Uri.encode(section.genre.name))
                                         )
                                     }
                                 )

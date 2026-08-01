@@ -13,8 +13,8 @@ data class SearchCacheEntity(
     @ColumnInfo(name = "title") val title: String,
     @ColumnInfo(name = "image") val image: String,
     @ColumnInfo(name = "type") val type: String,
-    @ColumnInfo(name = "episode_count") val episodeCount: Int,
-    @ColumnInfo(name = "rating") val rating: Float = 0f,
+    @ColumnInfo(name = "episode_count", defaultValue = "0") val episodeCount: Int,
+    @ColumnInfo(name = "rating", defaultValue = "0") val rating: Float = 0f,
     @ColumnInfo(name = "release_date") val releaseDate: String? = null,
-    @ColumnInfo(name = "status") val status: String = ""
+    @ColumnInfo(name = "status", defaultValue = "''") val status: String = ""
 )

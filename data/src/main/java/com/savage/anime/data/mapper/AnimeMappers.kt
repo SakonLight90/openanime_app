@@ -42,15 +42,6 @@ fun AnimeCacheEntity.toDomainDetail(): AnimeDetail {
     )
 }
 
-fun EpisodeCacheEntity.toDomain(): Episode {
-    return Episode(
-        id = id,
-        number = number,
-        token = token,
-        anime = null
-    )
-}
-
 fun Anime.toCacheEntity(category: String = ""): AnimeCacheEntity {
     return AnimeCacheEntity(
         id = id,

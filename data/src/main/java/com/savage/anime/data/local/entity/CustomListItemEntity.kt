@@ -10,5 +10,5 @@ import androidx.room.Entity
 data class CustomListItemEntity(
     @ColumnInfo(name = "list_id") val listId: Int,
     @ColumnInfo(name = "anime_id") val animeId: Int,
-    @ColumnInfo(name = "position") val position: Int
+    @ColumnInfo(name = "position", defaultValue = "0") val position: Int
 )

@@ -2,6 +2,7 @@ package com.savage.anime.ui.screens.customlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.savage.anime.domain.models.Anime
 import com.savage.anime.domain.models.CustomList
 import com.savage.anime.domain.repository.LocalUserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +14,7 @@ import javax.inject.Inject
 
 data class CustomListDetailUiState(
     val listName: String = "",
-    val animeIds: List<Int> = emptyList(),
+    val items: List<Anime> = emptyList(),
     val otherLists: List<CustomList> = emptyList(),
     val showMoveDialog: Boolean = false,
     val moveAnimeId: Int = 0,
@@ -33,9 +34,10 @@ class CustomListDetailViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoading = true, currentListId = listId)
         viewModelScope.launch {
             try {
-                val list = localUserDataRepository.getCustomListItems(listId)
+                val list = localUserDataRepository.getCustomList(listId)
                 _uiState.value = _uiState.value.copy(
-                    animeIds = list,
+                    listName = list?.name ?: "",
+                    items = list?.items ?: emptyList(),
                     isLoading = false
                 )
             } catch (_: Exception) {
@@ -74,7 +76,7 @@ class CustomListDetailViewModel @Inject constructor(
             localUserDataRepository.addToCustomList(targetListId, animeId, size)
             localUserDataRepository.removeFromCustomList(currentListId, animeId)
             _uiState.value = _uiState.value.copy(
-                animeIds = _uiState.value.animeIds - animeId,
+                items = _uiState.value.items.filterNot { it.id == animeId },
                 showMoveDialog = false,
                 moveAnimeId = 0
             )
@@ -85,7 +87,7 @@ class CustomListDetailViewModel @Inject constructor(
         viewModelScope.launch {
             localUserDataRepository.removeFromCustomList(listId, animeId)
             _uiState.value = _uiState.value.copy(
-                animeIds = _uiState.value.animeIds - animeId
+                items = _uiState.value.items.filterNot { it.id == animeId }
             )
         }
     }
