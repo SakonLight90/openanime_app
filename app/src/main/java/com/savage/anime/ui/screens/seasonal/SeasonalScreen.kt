@@ -1,9 +1,10 @@
 package com.savage.anime.ui.screens.seasonal
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,6 +23,8 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.savage.anime.R
 import com.savage.anime.navigation.Screen
+import com.savage.anime.ui.utils.currentScreenWidthClass
+import com.savage.anime.ui.utils.gridColumnsForWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,49 +63,46 @@ fun SeasonalScreen(
                 }
             }
         } else {
-            LazyColumn(
+            val columns = gridColumnsForWidth(currentScreenWidthClass())
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 uiState.seasons.forEach { (seasonLabel, animeList) ->
-                    item {
+                    item(span = { GridItemSpan(columns) }) {
                         Text(
                             text = seasonLabel,
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 12.dp)
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    item {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    items(animeList) { anime ->
+                        Card(
+                            onClick = {
+                                navController.navigate(Screen.Detail.route.replace("{animeId}", anime.id.toString()))
+                            },
+                            shape = RoundedCornerShape(4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
                         ) {
-                            items(animeList) { anime ->
-                                Card(
-                                    onClick = {
-                                        navController.navigate(Screen.Detail.route.replace("{animeId}", anime.id.toString()))
-                                    },
-                                    modifier = Modifier.width(130.dp),
-                                    shape = RoundedCornerShape(4.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
-                                ) {
-                                    Column {
-                                        AsyncImage(
-                                            model = anime.image,
-                                            contentDescription = anime.title,
-                                            modifier = Modifier.fillMaxWidth().height(195.dp),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                        Text(
-                                            text = anime.title,
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            maxLines = 2,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
+                            Column {
+                                AsyncImage(
+                                    model = anime.image,
+                                    contentDescription = anime.title,
+                                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Text(
+                                    text = anime.title,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    maxLines = 2,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                )
                             }
                         }
                     }

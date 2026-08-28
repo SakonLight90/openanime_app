@@ -92,7 +92,7 @@ fun SettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        Text("Pulisci cache", color = Color.White)
+                        Text("Pulisci cache", color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -238,12 +238,17 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
+                    val isWhiteAccent = uiState.selectedAccentColor == 0xFFFFFFFFL
+                    val applyContentColor = if (isWhiteAccent) Color(0xFF1A1A1A) else Color.White
                     Button(
                         onClick = { viewModel.applyAccentColor() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(uiState.selectedAccentColor.toInt())),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(uiState.selectedAccentColor.toInt()),
+                            contentColor = applyContentColor
+                        ),
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        Text("Applica", color = Color.White)
+                        Text("Applica", color = applyContentColor)
                     }
                 }
             }

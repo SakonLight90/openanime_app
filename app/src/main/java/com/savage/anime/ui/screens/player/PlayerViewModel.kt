@@ -74,15 +74,24 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun skipForward(seconds: Int = 10) {
-        player?.let { it.seekTo(it.currentPosition + seconds * 1000L) }
+        player?.let {
+            val target = it.currentPosition + seconds * 1000L
+            it.seekTo(target)
+            _uiState.value = _uiState.value.copy(playerPosition = target.coerceAtMost(_uiState.value.playerDuration))
+        }
     }
 
     fun skipBackward(seconds: Int = 10) {
-        player?.let { it.seekTo(maxOf(0L, it.currentPosition - seconds * 1000L)) }
+        player?.let {
+            val target = maxOf(0L, it.currentPosition - seconds * 1000L)
+            it.seekTo(target)
+            _uiState.value = _uiState.value.copy(playerPosition = target)
+        }
     }
 
     fun seekTo(position: Long) {
         player?.seekTo(position)
+        _uiState.value = _uiState.value.copy(playerPosition = position)
     }
 
     fun togglePlayPause() {
@@ -307,13 +316,15 @@ class PlayerViewModel @Inject constructor(
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) {
                     startProgressSaving(exo)
-                } else if (state == Player.STATE_ENDED && autoPlayNext) {
+                } else if (state == Player.STATE_ENDED) {
                     val dur = exo.duration
                     val pos = exo.currentPosition
                     if (dur > 10_000L && pos >= dur * 0.9) {
                         val next = getNextEpisode()
-                        if (next != null) {
+                        if (next != null && autoPlayNext) {
                             _uiState.value = _uiState.value.copy(autoNavigateToEpisode = next.id)
+                        } else if (next == null) {
+                            viewModelScope.launch { localUserDataRepository.clearAnimePosition(currentAnimeId) }
                         }
                     }
                 }
@@ -343,30 +354,39 @@ class PlayerViewModel @Inject constructor(
 
         saveJob = viewModelScope.launch {
             while (true) {
-                delay(1000)
-
                 val currentPlayer = this@PlayerViewModel.player
                 if (currentPlayer == null || currentPlayer !== player) break
 
                 val pos = currentPlayer.currentPosition
-                if (pos <= 0) continue
-
                 val duration = currentPlayer.duration
-                if (duration <= 0) continue
 
-                localUserDataRepository.savePosition(
-                    currentAnimeId,
-                    currentEpisodeId,
-                    pos,
-                    duration
-                )
+                if (duration > 0) {
+                    val nearEnd = (duration - pos) <= 60_000L
+                    _uiState.value = _uiState.value.copy(
+                        isNearEnd = nearEnd,
+                        playerPosition = pos,
+                        playerDuration = duration
+                    )
+                } else if (pos >= 0) {
+                    _uiState.value = _uiState.value.copy(playerPosition = pos)
+                }
 
-                val nearEnd = (duration - pos) <= 60_000L
-                _uiState.value = _uiState.value.copy(
-                    isNearEnd = nearEnd,
-                    playerPosition = pos,
-                    playerDuration = duration
-                )
+                if (pos > 0 && duration > 0) {
+                    val isLastEpisode = getNextEpisode() == null
+                    val isCompleted = (duration - pos) <= 60_000L
+                    if (isLastEpisode && isCompleted) {
+                        localUserDataRepository.clearAnimePosition(currentAnimeId)
+                    } else {
+                        localUserDataRepository.savePosition(
+                            currentAnimeId,
+                            currentEpisodeId,
+                            pos,
+                            duration
+                        )
+                    }
+                }
+
+                delay(500)
             }
         }
     }
@@ -385,7 +405,13 @@ class PlayerViewModel @Inject constructor(
             if (pos > 0) {
                 val finalDuration = if (duration > 0) duration
                 else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
-                localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, finalDuration)
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, finalDuration)
+                }
                 addToWatchHistory()
             }
         }
@@ -442,12 +468,18 @@ class PlayerViewModel @Inject constructor(
             viewModelScope.launch {
                 val finalDuration = if (duration > 0) duration
                 else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
-                localUserDataRepository.savePosition(
-                    currentAnimeId,
-                    currentEpisodeId,
-                    pos,
-                    finalDuration
-                )
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(
+                        currentAnimeId,
+                        currentEpisodeId,
+                        pos,
+                        finalDuration
+                    )
+                }
             }
         }
 
@@ -461,12 +493,18 @@ class PlayerViewModel @Inject constructor(
             viewModelScope.launch {
                 val finalDuration = if (duration > 0) duration
                 else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
-                localUserDataRepository.savePosition(
-                    currentAnimeId,
-                    currentEpisodeId,
-                    pos,
-                    finalDuration
-                )
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(
+                        currentAnimeId,
+                        currentEpisodeId,
+                        pos,
+                        finalDuration
+                    )
+                }
                 addToWatchHistory()
             }
         }

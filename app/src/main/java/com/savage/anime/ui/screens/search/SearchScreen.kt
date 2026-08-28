@@ -119,7 +119,7 @@ fun SearchScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val statuses = listOf(null to "Tutti", "completed" to "Completato", "airing" to "In corso", "upcoming" to "Imminente")
+                    val statuses = listOf(null to "Tutti", "completed" to "Completato", "ongoing" to "In corso", "upcoming" to "Imminente")
                     statuses.forEach { (status, label) ->
                         FilterChip(
                             selected = uiState.selectedStatus == status,
@@ -144,7 +144,7 @@ fun SearchScreen(
                     val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                     val yearOptions = buildList {
                         add(null to "Tutti")
-                        for (y in currentYear downTo 1980 step 5) {
+                        for (y in currentYear downTo 1970 step 1) {
                             add(y.toString() to y.toString())
                         }
                     }

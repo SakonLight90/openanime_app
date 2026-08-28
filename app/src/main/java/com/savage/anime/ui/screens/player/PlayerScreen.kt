@@ -615,12 +615,19 @@ fun PlayerScreen(
                                         )
                                     }
 
-                                    IconButton(onClick = { viewModel.togglePlayPause(); hideSystemUi() }) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .clickable { viewModel.togglePlayPause(); hideSystemUi() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
                                         Icon(
                                             imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                             contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(48.dp)
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(32.dp)
                                         )
                                     }
 
@@ -784,7 +791,7 @@ fun PlayerScreen(
                                 ) {
                                     Text(
                                         text = "Prossimo episodio",
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onPrimary,
                                         fontSize = 14.sp
                                     )
                                     if (autoPlayEnabled && autoPlayCountdown > 0 && !skipForwardAfterNearEnd) {
@@ -799,7 +806,7 @@ fun PlayerScreen(
                                     Icon(
                                         Icons.Default.SkipNext,
                                         contentDescription = null,
-                                        tint = Color.White
+                                        tint = MaterialTheme.colorScheme.onPrimary
                                     )
                                 }
                             }

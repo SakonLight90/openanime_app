@@ -14,8 +14,8 @@ android {
         applicationId = "com.savage.anime"
         minSdk = 31
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.0.6a"
+        versionCode = 7
+        versionName = "1.0.7a"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

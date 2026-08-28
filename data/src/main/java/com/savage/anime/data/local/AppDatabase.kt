@@ -257,7 +257,7 @@ abstract class AppDatabase : RoomDatabase() {
 
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS custom_lists_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         name TEXT NOT NULL,
                         created_at INTEGER NOT NULL DEFAULT 0
                     )
@@ -301,7 +301,7 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS custom_lists (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         name TEXT NOT NULL,
                         created_at INTEGER NOT NULL DEFAULT 0
                     )
