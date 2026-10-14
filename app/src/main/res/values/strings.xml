@@ -1,0 +1,202 @@
+<resources>
+    <string name="app_name">OpenAnime</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Cerca</string>
+    <string name="nav_watchlist">Lista</string>
+    <string name="nav_settings">Impostazioni</string>
+
+    <!-- Comuni -->
+    <string name="retry">Riprova</string>
+    <string name="cancel">Annulla</string>
+    <string name="remove">Rimuovi</string>
+    <string name="delete">Elimina</string>
+    <string name="view_all">Vedi tutti</string>
+    <string name="back_desc">Indietro</string>
+    <string name="more_options">Altre opzioni</string>
+    <string name="show_more">Mostra altri (%1$d rimanenti)</string>
+    <string name="episode_prefix">Ep. %1$s</string>
+
+    <!-- Home -->
+    <string name="section_popular">Popolari</string>
+    <string name="section_ongoing">In Corso</string>
+    <string name="section_newest">Nuovi</string>
+    <string name="section_updated">Aggiornati</string>
+    <string name="section_continue_watching">Continua a guardare</string>
+    <string name="section_latest_episodes">Ultimi episodi</string>
+    <string name="section_watchlist">La mia lista</string>
+    <string name="hero_watch">Guarda</string>
+    <string name="hero_info">Informazioni</string>
+
+    <!-- Search -->
+    <string name="search_hint">Cerca anime</string>
+    <string name="search_no_results">Nessun risultato</string>
+    <string name="az_list_title">A-Z</string>
+    <string name="az_list_no_results">Nessun risultato per %s</string>
+    <string name="search_filter_all">Tutti</string>
+    <string name="search_genres">Generi</string>
+    <string name="search_loading_all">Caricamento anime in corso…</string>
+    <string name="search_empty_hint">Cerca per titolo o sfoglia per genere / A-Z</string>
+    <string name="search_no_results_filters">Nessun risultato per i filtri selezionati</string>
+    <string name="search_clear_filters">Azzera filtri</string>
+
+    <!-- Detail -->
+    <string name="detail_not_found">Anime non trovato</string>
+    <string name="detail_episodes">Episodi</string>
+    <string name="detail_version">Versione</string>
+    <string name="detail_season_format">Stagione %1$d (Ep. %2$s)</string>
+    <string name="detail_share_title">Condividi</string>
+    <string name="detail_synopsis">Trama</string>
+    <string name="detail_season_picker">Seleziona Stagione</string>
+    <string name="detail_add_to_list">+ Aggiungi a lista</string>
+    <string name="detail_add_to_list_title">Aggiungi a lista</string>
+    <string name="detail_resume_episode">Continua episodio %1$s</string>
+    <string name="detail_toggle_watchlist_add">Aggiungi alla lista</string>
+    <string name="detail_toggle_watchlist_remove">Rimuovi dalla lista</string>
+    <string name="detail_back_desc">Indietro</string>
+
+    <string name="detail_season_expand">Espandi stagione</string>
+    <string name="detail_season_collapse">Comprimi stagione</string>
+    <string name="detail_version_italian">Italiano</string>
+    <string name="detail_version_japanese">Giapponese</string>
+    <string name="detail_only_sub_version">(Solo versione sottotitolata)</string>
+    <string name="detail_only_dub_version">(Solo versione doppiata)</string>
+
+    <!-- Player -->
+    <string name="player_retry">Riprova</string>
+    <string name="player_play">Riproduci</string>
+    <string name="player_episodes">Episodi</string>
+    <string name="player_next_episode">Prossimo episodio</string>
+    <string name="player_episodes_title">Episodi</string>
+    <string name="player_lock_desc">Blocca</string>
+    <string name="player_unlock_desc">Sblocca</string>
+    <string name="player_pip_desc">Picture-in-Picture</string>
+    <string name="player_resize_desc">Ridimensiona</string>
+    <string name="player_resize_fit">Adatta</string>
+    <string name="player_resize_fill">Riempi</string>
+    <string name="player_resize_zoom">Zoom</string>
+    <string name="player_sleep_disable">Disattiva</string>
+    <string name="player_sleep_minutes">%1$d min</string>
+    <string name="player_back_desc">Indietro</string>
+    <string name="player_rewind_desc">Indietro 10 secondi</string>
+    <string name="player_forward_desc">Avanti 10 secondi</string>
+    <string name="player_rewind_label">« %1$ds</string>
+    <string name="player_forward_label">» %1$ds</string>
+
+    <!-- Search filters -->
+    <string name="search_filter_year">Anno</string>
+    <string name="search_filter_anime">Anime</string>
+    <string name="search_filter_tv">TV</string>
+    <string name="search_filter_film">Film</string>
+    <string name="search_filter_ova">OVA</string>
+    <string name="search_filter_ona">ONA</string>
+    <string name="search_filter_special">Special</string>
+    <string name="search_filter_in_corso">In corso</string>
+    <string name="search_filter_completato">Completato</string>
+    <string name="search_filter_imminente">Imminente</string>
+    <string name="search_filter_giapponese">Giapponese</string>
+    <string name="search_filter_italiano">Italiano</string>
+
+    <!-- Watchlist -->
+    <string name="watchlist_title">La mia lista</string>
+    <string name="watchlist_empty">La tua lista è vuota</string>
+    <string name="watchlist_empty_hint">Aggiungi anime dalla home o dal dettaglio</string>
+    <string name="watchlist_favorites">Preferiti</string>
+    <string name="watchlist_my_lists">Le mie liste</string>
+
+    <!-- Continue Watching -->
+    <string name="continue_watching_title">Continua a guardare</string>
+    <string name="continue_watching_empty">Nessun episodio in corso</string>
+    <string name="continue_watching_resume">Ep. %1$s - Continua</string>
+
+    <!-- Genres -->
+    <string name="genres_title">Generi</string>
+    <string name="genres_empty">Nessun genere disponibile</string>
+    <string name="genre_anime_empty">Nessun anime in questo genere</string>
+
+    <!-- Stagionali -->
+    <string name="seasonal_title">Stagionali</string>
+    <string name="seasonal_empty">Nessun anime stagionale disponibile</string>
+
+    <!-- History -->
+    <string name="history_title">Storico</string>
+    <string name="history_clear">Pulisci</string>
+    <string name="history_clear_title">Svuotare lo storico?</string>
+    <string name="history_clear_message">Tutti gli episodi guardati verranno rimossi irreversibilmente.</string>
+    <string name="history_empty">Nessun episodio guardato di recente</string>
+
+    <!-- Custom Lists -->
+    <string name="custom_lists_title">Le mie liste</string>
+    <string name="custom_lists_empty">Nessuna lista creata</string>
+    <string name="custom_lists_new">Nuova lista</string>
+    <string name="custom_lists_name_hint">Nome lista</string>
+    <string name="custom_lists_create">Crea</string>
+    <string name="custom_lists_delete_title">Eliminare la lista?</string>
+    <string name="custom_lists_delete_message">La lista «%1$s» verrà eliminata irreversibilmente.</string>
+    <string name="custom_lists_created_on">Creata il %1$s</string>
+    <string name="custom_lists_create_desc">Crea lista</string>
+    <string name="custom_lists_delete_desc">Elimina lista</string>
+    <string name="custom_list_title_fallback">Lista</string>
+    <string name="custom_list_empty">Lista vuota</string>
+    <string name="custom_list_remove_title">Rimuovi dalla lista?</string>
+    <string name="custom_list_remove_message">«%1$s» verrà rimosso da questa lista.</string>
+    <string name="custom_list_move">Sposta in…</string>
+    <string name="custom_list_move_desc">Sposta in un\'altra lista</string>
+
+    <!-- Latest Episodes -->
+    <string name="latest_episodes_title">Ultimi episodi</string>
+    <string name="latest_episodes_empty">Nessun episodio</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_cache">Cache</string>
+    <string name="settings_cache_size">Cache: %1$s</string>
+    <string name="settings_cache_clear">Pulisci cache</string>
+    <string name="settings_cache_clear_title">Pulisire la cache?</string>
+    <string name="settings_cache_clear_message">I dati scaricati verranno rimossi. Le liste, lo storico e le preferenze restano intatti.</string>
+    <string name="settings_auto_play">Auto-play episodio successivo</string>
+    <string name="settings_auto_play_on">Attivo</string>
+    <string name="settings_auto_play_off">Disattivo</string>
+    <string name="settings_history">Storico</string>
+    <string name="settings_custom_lists">Le mie liste</string>
+    <string name="settings_seasonal">Stagionali</string>
+    <string name="settings_accent_color">Colore accento</string>
+    <string name="settings_accent_apply">Applica</string>
+    <string name="settings_version">Versione</string>
+    <string name="settings_info">Informazioni</string>
+    <string name="settings_creator">Autore</string>
+    <string name="settings_github">Repository GitHub</string>
+    <string name="settings_branch_alpha">Alpha</string>
+    <string name="settings_branch_beta">Beta</string>
+    <string name="settings_branch_hotfix">Hotfix</string>
+    <string name="settings_branch_stable">Stabile</string>
+    <string name="settings_copyright">© 2026 OpenAnime</string>
+    <string name="settings_color_red">Rosso</string>
+    <string name="settings_color_green">Verde</string>
+    <string name="settings_color_blue">Blu</string>
+    <string name="settings_color_orange">Arancione</string>
+    <string name="settings_color_purple">Viola</string>
+    <string name="settings_color_white">Bianco</string>
+
+    <!-- Version check -->
+    <string name="update_required_title">Aggiornamento richiesto</string>
+    <string name="update_required_message">La tua versione non è più compatibile. Scarica l\'ultima versione (%1$s) per continuare.</string>
+    <string name="update_required_message_no_version">La tua versione non è più compatibile. Scarica l\'ultima versione per continuare.</string>
+    <string name="update_download">Scarica aggiornamento</string>
+    <string name="update_github">GitHub: %1$s</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Salta</string>
+    <string name="onboarding_next">Avanti</string>
+    <string name="onboarding_start">Inizia</string>
+    <string name="onboarding_page1_title">Benvenuto a OpenAnime</string>
+    <string name="onboarding_page1_desc">Scopri migliaia di anime in streaming, con sottotitoli e doppiaggio italiano.</string>
+    <string name="onboarding_page2_title">Riprendi dove hai lasciato</string>
+    <string name="onboarding_page2_desc">La posizione di riproduzione viene salvata automaticamente per ogni episodio.</string>
+    <string name="onboarding_page3_title">Le tue liste</string>
+    <string name="onboarding_page3_desc">Crea liste personalizzate e salva i tuoi anime preferiti per ritrovarli subito.</string>
+
+    <!-- Errori -->
+    <string name="error_generic">Errore durante il caricamento</string>
+</resources>

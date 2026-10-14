@@ -1,0 +1,597 @@
+package com.savage.anime.ui.screens.player
+
+import android.app.Application
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import com.savage.anime.domain.repository.AnimeRepository
+import com.savage.anime.domain.repository.LocalUserDataRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import javax.inject.Inject
+
+data class SleepTimerState(
+    val isActive: Boolean = false,
+    val remainingSeconds: Int = 0,
+    val totalSeconds: Int = 0
+)
+
+@HiltViewModel
+class PlayerViewModel @Inject constructor(
+    private val animeRepository: AnimeRepository,
+    private val localUserDataRepository: LocalUserDataRepository,
+    private val application: Application
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(PlayerUiState())
+    val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
+
+    private val _sleepTimer = MutableStateFlow(SleepTimerState())
+    val sleepTimer: StateFlow<SleepTimerState> = _sleepTimer.asStateFlow()
+
+    private var player: ExoPlayer? = null
+    private var playerListener: Player.Listener? = null
+
+    private var retryCount = 0
+    private var currentAnimeId = 0
+    private var currentEpisodeId = 0
+    private var currentToken = ""
+
+    private var saveJob: Job? = null
+    private var autoPlayNext: Boolean = true
+    private var userPaused: Boolean = false
+    private var sleepTimerJob: Job? = null
+    private var currentAnimeTitle: String = ""
+    private var currentAnimeImage: String = ""
+
+    fun getExoPlayer(): ExoPlayer? = player
+
+    fun loadAutoPlaySetting() {
+        viewModelScope.launch {
+            autoPlayNext = localUserDataRepository.getAutoPlayNext()
+        }
+    }
+
+    fun isAutoPlayEnabled(): Boolean = autoPlayNext
+
+    fun releasePlayer() {
+        saveJob?.cancel()
+        sleepTimerJob?.cancel()
+        playerListener?.let { player?.removeListener(it) }
+        playerListener = null
+        player?.release()
+        player = null
+    }
+
+    fun skipForward(seconds: Int = 10) {
+        player?.let {
+            val target = it.currentPosition + seconds * 1000L
+            it.seekTo(target)
+            _uiState.value = _uiState.value.copy(playerPosition = target.coerceAtMost(_uiState.value.playerDuration))
+        }
+    }
+
+    fun skipBackward(seconds: Int = 10) {
+        player?.let {
+            val target = maxOf(0L, it.currentPosition - seconds * 1000L)
+            it.seekTo(target)
+            _uiState.value = _uiState.value.copy(playerPosition = target)
+        }
+    }
+
+    fun seekTo(position: Long) {
+        player?.seekTo(position)
+        _uiState.value = _uiState.value.copy(playerPosition = position)
+    }
+
+    fun togglePlayPause() {
+        val exo = player ?: return
+        if (exo.isPlaying) {
+            exo.pause()
+            userPaused = true
+            _uiState.value = _uiState.value.copy(isPlaying = false)
+        } else {
+            exo.play()
+            userPaused = false
+            _uiState.value = _uiState.value.copy(isPlaying = true)
+        }
+    }
+
+    fun getNextEpisode(): com.savage.anime.domain.models.Episode? {
+        val episodes = _uiState.value.anime?.episodes ?: return null
+        val currentIndex = episodes.indexOfFirst { it.id == currentEpisodeId }
+        if (currentIndex < 0 || currentIndex >= episodes.size - 1) return null
+        return episodes[currentIndex + 1]
+    }
+
+    fun getPreviousEpisode(): com.savage.anime.domain.models.Episode? {
+        val episodes = _uiState.value.anime?.episodes ?: return null
+        val currentIndex = episodes.indexOfFirst { it.id == currentEpisodeId }
+        if (currentIndex <= 0) return null
+        return episodes[currentIndex - 1]
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        player?.setPlaybackSpeed(speed)
+        _uiState.value = _uiState.value.copy(playbackSpeed = speed)
+    }
+
+    private suspend fun getDetailWithEpisodes(animeId: Int): com.savage.anime.domain.models.AnimeDetail? =
+        withTimeoutOrNull(10_000) {
+            animeRepository.getDetail(animeId).firstOrNull { d -> d.episodes.isNotEmpty() }
+        } ?: animeRepository.getDetail(animeId).firstOrNull()
+
+    fun loadPlayer(animeId: Int, episodeId: Int) {
+        saveJob?.cancel()
+        sleepTimerJob?.cancel()
+        player?.stop()
+        player?.release()
+        player = null
+
+        currentAnimeId = animeId
+        currentEpisodeId = episodeId
+        retryCount = 0
+
+        _uiState.value = _uiState.value.copy(
+            streamUrl = null,
+            episode = null,
+            anime = null,
+            isLoading = true,
+            error = null,
+            isNearEnd = false,
+            isPlaying = false,
+            position = 0L
+        )
+
+        viewModelScope.launch {
+            try {
+                val detail = getDetailWithEpisodes(animeId)
+                val episode = detail?.episodes?.firstOrNull { it.id == episodeId }
+
+                if (episode == null) {
+                    val fallback = animeRepository.getEpisodeById(episodeId)
+                    if (fallback != null) {
+                        currentToken = fallback.token
+                        currentAnimeTitle = fallback.anime?.title ?: detail?.title ?: ""
+                        currentAnimeImage = fallback.anime?.image ?: detail?.coverImage ?: ""
+                        val position = localUserDataRepository.getPosition(animeId, episodeId) ?: 0L
+                        _uiState.value = _uiState.value.copy(
+                            anime = detail,
+                            episode = fallback,
+                            position = position,
+                            isLoading = true,
+                            error = null
+                        )
+                        loadStream()
+                        return@launch
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        error = if (detail == null) "Nessun episodio disponibile" else "Episodio non trovato",
+                        isLoading = false
+                    )
+                    return@launch
+                }
+
+                currentToken = episode.token
+                currentAnimeTitle = detail.title
+                currentAnimeImage = detail.coverImage
+                val position = localUserDataRepository.getPosition(animeId, episodeId) ?: 0L
+
+                _uiState.value = _uiState.value.copy(
+                    anime = detail,
+                    episode = episode,
+                    position = position,
+                    isLoading = true,
+                    error = null
+                )
+                loadStream()
+
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Episodio non trovato",
+                    isLoading = false
+                )
+            }
+        }
+    }
+
+    fun retryLoadPlayer() {
+        loadPlayer(currentAnimeId, currentEpisodeId)
+    }
+
+    fun loadStream() {
+        if (currentToken.isNotEmpty()) {
+            loadStream(currentToken)
+        } else {
+            refreshTokenAndRetry()
+        }
+    }
+
+    private fun loadStream(token: String) {
+        viewModelScope.launch {
+            try {
+                val response = animeRepository.getStreamUrl(token)
+
+                val url = response.url
+
+                if (response.success && !url.isNullOrBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        streamUrl = url,
+                        isLoading = false,
+                        error = null
+                    )
+
+                    initializePlayer(url)
+                    retryCount = 0
+                } else {
+                    handleStreamError()
+                }
+
+            } catch (e: Exception) {
+                handleStreamError()
+            }
+        }
+    }
+
+    fun retryStream() {
+        if (retryCount >= 3) {
+            _uiState.value = _uiState.value.copy(
+                error = "Impossibile caricare lo streaming",
+                isLoading = false
+            )
+            return
+        }
+
+        retryCount++
+        _uiState.value = _uiState.value.copy(
+            error = null,
+            isLoading = true
+        )
+
+        saveJob?.cancel()
+        saveJob = null
+        playerListener = null
+        player?.release()
+        player = null
+
+        if (currentToken.isNotEmpty()) {
+            loadStream(currentToken)
+        } else {
+            refreshTokenAndRetry()
+        }
+    }
+
+    private fun refreshTokenAndRetry() {
+        viewModelScope.launch {
+            try {
+                val detail = getDetailWithEpisodes(currentAnimeId)
+                    ?: return@launch
+                val episode = detail.episodes.firstOrNull { it.id == currentEpisodeId }
+                    ?: animeRepository.getEpisodeById(currentEpisodeId) ?: return@launch
+                currentToken = episode.token
+                if (currentToken.isNotEmpty()) {
+                    loadStream(currentToken)
+                } else {
+                    retryStream()
+                }
+            } catch (_: Exception) {
+                retryStream()
+            }
+        }
+    }
+
+    private fun handleStreamError() {
+        retryStream()
+    }
+
+    private fun initializePlayer(url: String) {
+        if (player == null) {
+            player = ExoPlayer.Builder(application).build()
+        }
+
+        val exo = player ?: return
+        exo.clearMediaItems()
+        exo.setMediaItem(MediaItem.fromUri(url))
+        exo.prepare()
+
+        val position = _uiState.value.position
+        if (position > 0) exo.seekTo(position)
+
+        val shouldPlay = !userPaused
+        exo.playWhenReady = shouldPlay
+        _uiState.value = _uiState.value.copy(isPlaying = shouldPlay)
+
+        playerListener?.let { exo.removeListener(it) }
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) {
+                    startProgressSaving(exo)
+                } else if (state == Player.STATE_ENDED) {
+                    val dur = exo.duration
+                    val pos = exo.currentPosition
+                    if (dur > 10_000L && pos >= dur * 0.9) {
+                        val next = getNextEpisode()
+                        if (next != null && autoPlayNext) {
+                            _uiState.value = _uiState.value.copy(autoNavigateToEpisode = next.id)
+                        } else if (next == null) {
+                            viewModelScope.launch { localUserDataRepository.clearAnimePosition(currentAnimeId) }
+                        }
+                    }
+                }
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                handleStreamError()
+            }
+
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                val ratio = if (videoSize.width > 0 && videoSize.height > 0)
+                    videoSize.width.toFloat() / videoSize.height.toFloat()
+                else 0f
+                _uiState.value = _uiState.value.copy(videoAspectRatio = ratio)
+            }
+        }
+        playerListener = listener
+        exo.addListener(listener)
+    }
+
+    private fun startProgressSaving(player: ExoPlayer) {
+        saveJob?.cancel()
+
+        saveJob = viewModelScope.launch {
+            while (true) {
+                val currentPlayer = this@PlayerViewModel.player
+                if (currentPlayer == null || currentPlayer !== player) break
+
+                val pos = currentPlayer.currentPosition
+                val duration = currentPlayer.duration
+
+                if (duration > 0) {
+                    val nearEnd = (duration - pos) <= 60_000L
+                    _uiState.value = _uiState.value.copy(
+                        isNearEnd = nearEnd,
+                        playerPosition = pos,
+                        playerDuration = duration
+                    )
+                } else if (pos >= 0) {
+                    _uiState.value = _uiState.value.copy(playerPosition = pos)
+                }
+
+                if (pos > 0 && duration > 0) {
+                    val isLastEpisode = getNextEpisode() == null
+                    val isCompleted = (duration - pos) <= 60_000L
+                    if (isLastEpisode && isCompleted) {
+                        localUserDataRepository.clearAnimePosition(currentAnimeId)
+                    } else {
+                        localUserDataRepository.savePosition(
+                            currentAnimeId,
+                            currentEpisodeId,
+                            pos,
+                            duration
+                        )
+                    }
+                }
+
+                delay(500)
+            }
+        }
+    }
+
+    fun onEnterBackground() {
+        val exo = player ?: return
+        if (exo.isPlaying) {
+            userPaused = true
+            exo.pause()
+            _uiState.value = _uiState.value.copy(isPlaying = false)
+        }
+        saveJob?.cancel()
+        viewModelScope.launch {
+            val pos = exo.currentPosition
+            val duration = exo.duration
+            if (pos > 0) {
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, finalDuration)
+                }
+                addToWatchHistory()
+            }
+        }
+    }
+
+    fun reloadPlayerForPip() {
+        val lastPos = _uiState.value.position
+        saveJob?.cancel()
+        sleepTimerJob?.cancel()
+        player?.stop()
+        player?.release()
+        player = null
+        _uiState.value = _uiState.value.copy(
+            streamUrl = null,
+            error = null,
+            isLoading = true,
+            isNearEnd = false,
+            position = lastPos
+        )
+        retryCount = 0
+        if (currentAnimeId > 0 && currentEpisodeId > 0) {
+            refreshTokenAndRetry()
+        }
+    }
+
+    fun savePositionNow() {
+        val pos = player?.currentPosition ?: return
+        if (pos > 0) {
+            val dur = player?.duration ?: 0L
+            viewModelScope.launch {
+                localUserDataRepository.savePosition(currentAnimeId, currentEpisodeId, pos, dur)
+                addToWatchHistory()
+            }
+        }
+    }
+
+    fun isPlayerAlive(): Boolean {
+        val p = player ?: return false
+        return p.playbackState != Player.STATE_IDLE && p.playbackState != Player.STATE_ENDED
+    }
+
+    fun setResizeMode(mode: Int) {
+        _uiState.value = _uiState.value.copy(resizeMode = mode)
+    }
+
+    fun savePosition() {
+        saveJob?.cancel()
+        saveJob = null
+
+        val pos = player?.currentPosition ?: 0L
+
+        if (pos > 0) {
+            val duration = player?.duration ?: 0L
+            viewModelScope.launch {
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(
+                        currentAnimeId,
+                        currentEpisodeId,
+                        pos,
+                        finalDuration
+                    )
+                }
+            }
+        }
+
+        releasePlayer()
+    }
+
+    fun savePositionOnly() {
+        val pos = player?.currentPosition ?: 0L
+        if (pos > 0) {
+            val duration = player?.duration ?: 0L
+            viewModelScope.launch {
+                val finalDuration = if (duration > 0) duration
+                else localUserDataRepository.getDuration(currentAnimeId, currentEpisodeId) ?: 0L
+                val isLast = getNextEpisode() == null
+                val isCompleted = finalDuration > 0 && (finalDuration - pos) <= 60_000L
+                if (isLast && isCompleted) {
+                    localUserDataRepository.clearAnimePosition(currentAnimeId)
+                } else {
+                    localUserDataRepository.savePosition(
+                        currentAnimeId,
+                        currentEpisodeId,
+                        pos,
+                        finalDuration
+                    )
+                }
+                addToWatchHistory()
+            }
+        }
+    }
+
+    private suspend fun addToWatchHistory() {
+        try {
+            localUserDataRepository.addToWatchHistory(
+                currentAnimeId,
+                currentEpisodeId,
+                currentAnimeTitle,
+                currentAnimeImage,
+                _uiState.value.episode?.number ?: 0.0
+            )
+        } catch (_: Exception) { }
+    }
+
+    fun isUserPaused(): Boolean = userPaused
+
+    fun hasLoaded(): Boolean = currentAnimeId > 0
+
+    fun resumePlayback() {
+        val exo = player
+        if (exo == null) {
+            loadPlayer(currentAnimeId, currentEpisodeId)
+            return
+        }
+        if (exo.playerError != null || exo.playbackState == Player.STATE_IDLE) {
+            retryCount = 0
+            loadPlayer(currentAnimeId, currentEpisodeId)
+        } else {
+            if (!userPaused && !exo.isPlaying) {
+                exo.play()
+            }
+        }
+    }
+
+    fun startSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        val totalSec = minutes * 60
+        _sleepTimer.value = SleepTimerState(isActive = true, remainingSeconds = totalSec, totalSeconds = totalSec)
+        sleepTimerJob = viewModelScope.launch {
+            for (i in totalSec downTo 1) {
+                delay(1000)
+                _sleepTimer.value = _sleepTimer.value.copy(remainingSeconds = i - 1)
+            }
+            _sleepTimer.value = SleepTimerState()
+            player?.pause()
+            _uiState.value = _uiState.value.copy(isPlaying = false)
+        }
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        _sleepTimer.value = SleepTimerState()
+    }
+
+    fun setAutoPlayNextEnabled(enabled: Boolean) {
+        autoPlayNext = enabled
+        viewModelScope.launch {
+            localUserDataRepository.setAutoPlayNext(enabled)
+        }
+    }
+
+    override fun onCleared() {
+        saveJob?.cancel()
+        sleepTimerJob?.cancel()
+        releasePlayer()
+        super.onCleared()
+    }
+}
+
+data class PlayerUiState(
+    val episode: com.savage.anime.domain.models.Episode? = null,
+    val anime: com.savage.anime.domain.models.AnimeDetail? = null,
+    val position: Long = 0L,
+    val streamUrl: String? = null,
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val retryCount: Int = 0,
+    val isNearEnd: Boolean = false,
+    val isPlaying: Boolean = false,
+    val playerPosition: Long = 0L,
+    val playerDuration: Long = 0L,
+    val playbackSpeed: Float = 1.0f,
+    val resizeMode: Int = 0,
+    val videoAspectRatio: Float = 0f,
+    val autoNavigateToEpisode: Int? = null
+)
