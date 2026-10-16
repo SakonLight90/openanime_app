@@ -97,6 +97,10 @@
     <string name="search_filter_imminente">Imminente</string>
     <string name="search_filter_giapponese">Giapponese</string>
     <string name="search_filter_italiano">Italiano</string>
+    <string name="search_filter_cinese">Cinese</string>
+    <string name="search_filter_coreano">Coreano</string>
+    <string name="search_filter_inglese">Inglese</string>
+    <string name="search_filter_francese">Francese</string>
 
     <!-- Watchlist -->
     <string name="watchlist_title">La mia lista</string>

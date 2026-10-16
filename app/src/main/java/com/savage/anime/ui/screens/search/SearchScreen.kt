@@ -58,7 +58,11 @@ private val STATUS_FILTERS = listOf(
 private val LANGUAGE_FILTERS = listOf(
     FilterOption(null, R.string.search_filter_all),
     FilterOption("jp", R.string.search_filter_giapponese),
-    FilterOption("it", R.string.search_filter_italiano)
+    FilterOption("it", R.string.search_filter_italiano),
+    FilterOption("ch", R.string.search_filter_cinese),
+    FilterOption("kr", R.string.search_filter_coreano),
+    FilterOption("en", R.string.search_filter_inglese),
+    FilterOption("fr", R.string.search_filter_francese)
 )
 
 @Composable
