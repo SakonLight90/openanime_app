@@ -335,6 +335,7 @@ fun DetailScreen(
                                 selectedVersionId = state.selectedVersionId,
                                 currentAnimeId = anime.id,
                                 currentTitle = anime.title,
+                                currentLanguage = anime.language.ifBlank { "jp" },
                                 currentIsDub = anime.isDub,
                                 versions = anime.relatedVersions,
                                 onLanguageSelected = { viewModel.selectLanguage(it) }

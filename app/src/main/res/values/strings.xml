@@ -60,8 +60,7 @@
     <string name="detail_season_collapse">Comprimi stagione</string>
     <string name="detail_version_italian">Italiano</string>
     <string name="detail_version_japanese">Giapponese</string>
-    <string name="detail_only_sub_version">(Solo versione sottotitolata)</string>
-    <string name="detail_only_dub_version">(Solo versione doppiata)</string>
+    <string name="detail_only_version">(Solo versione in %1$s)</string>
 
     <!-- Player -->
     <string name="player_retry">Riprova</string>

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.savage.anime.R
 import com.savage.anime.domain.models.RelatedVersion
+import com.savage.anime.ui.utils.languageLabelRes
 
 private const val CURRENT_VERSION_ID = -1
 
@@ -27,6 +28,7 @@ fun LanguageSelector(
     selectedVersionId: Int?,
     currentAnimeId: Int,
     currentTitle: String,
+    currentLanguage: String,
     currentIsDub: Boolean,
     versions: List<RelatedVersion>,
     onLanguageSelected: (Int?) -> Unit
@@ -36,7 +38,7 @@ fun LanguageSelector(
             RelatedVersion(
                 id = CURRENT_VERSION_ID,
                 title = currentTitle,
-                language = if (currentIsDub) "dub" else "sub",
+                language = currentLanguage,
                 isDub = currentIsDub
             )
         )
@@ -44,9 +46,7 @@ fun LanguageSelector(
     }
 
     val singleVersion = allOptions.size <= 1
-    val singleVersionIsDub = allOptions.firstOrNull()?.isDub ?: false
-    val italianLabel = stringResource(R.string.detail_version_italian)
-    val japaneseLabel = stringResource(R.string.detail_version_japanese)
+    val singleVersionLanguage = allOptions.firstOrNull()?.language
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         LazyRow(
@@ -75,7 +75,7 @@ fun LanguageSelector(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = if (option.isDub) italianLabel else japaneseLabel,
+                        text = stringResource(languageLabelRes(option.language)),
                         color = textColor,
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -88,8 +88,8 @@ fun LanguageSelector(
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(
-                    if (singleVersionIsDub) R.string.detail_only_dub_version
-                    else R.string.detail_only_sub_version
+                    R.string.detail_only_version,
+                    stringResource(languageLabelRes(singleVersionLanguage))
                 ),
                 color = Color(0xFF666666),
                 fontSize = 12.sp
