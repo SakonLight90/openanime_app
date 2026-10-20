@@ -44,7 +44,7 @@ globalmente in `NetworkModule` (non per-annotazione).
 | SDK min / target / compile | 31 / 36 / 36 |
 | Gradle wrapper | 9.4.1 |
 | JVM target | 17 |
-| versionName / versionCode | 1.0.8 / 8 |
+| versionName / versionCode | 1.0.9 / 9 |
 
 ## Configurazione Build
 

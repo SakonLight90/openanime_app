@@ -2,7 +2,7 @@
 
 **OpenAnime** è un'applicazione Android per la visione di anime con sottotitoli in italiano (SUB ITA) e doppiaggio italiano (DUB ITA). Offre un catalogo organizzato, un player video con controlli avanzati e strumenti per gestire la propria esperienza di visione, senza richiedere un account né dipendere dai servizi Google.
 
-**Versione corrente:** `1.0.8`
+**Versione corrente:** `1.0.9`
 
 ## Requisiti
 

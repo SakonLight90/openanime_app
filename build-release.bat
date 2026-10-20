@@ -24,8 +24,8 @@ if %errorlevel%==1 (
 echo Processi chiusi.
 if exist "app\build\outputs\apk\release\app-release.apk" (
     echo Rinomino e sposto l'APK...
-    move /y "app\build\outputs\apk\release\app-release.apk" "openanime-1.0.8.apk"
-    echo APK spostato: openanime-1.0.8.apk
+    move /y "app\build\outputs\apk\release\app-release.apk" "openanime-1.0.9.apk"
+    echo APK spostato: openanime-1.0.9.apk
 ) else (
     echo APK non trovato in app\build\outputs\apk\release\
 )
