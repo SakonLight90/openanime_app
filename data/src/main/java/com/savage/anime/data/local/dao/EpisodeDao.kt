@@ -18,10 +18,15 @@ interface EpisodeDao {
     fun getByAnimeId(animeId: Int): Flow<List<EpisodeCacheEntity>>
 
     @Query("""
-        SELECT DISTINCT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
+        SELECT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
                a.title AS animeTitle, a.image AS animeImage
         FROM episodes_cache e
-        INNER JOIN anime_cache a ON e.anime_id = a.id
+        INNER JOIN anime_cache a ON a.rowid = (
+            SELECT b.rowid FROM anime_cache b
+            WHERE b.id = e.anime_id
+            ORDER BY (b.category = '') DESC, LENGTH(b.synopsis) DESC, b.updated_at DESC
+            LIMIT 1
+        )
         ORDER BY e.id DESC
     """)
     fun getLatest(): Flow<List<EpisodeWithAnime>>
@@ -33,7 +38,12 @@ interface EpisodeDao {
         SELECT e.id, e.anime_id AS animeId, e.number, e.title, e.token,
                a.title AS animeTitle, a.image AS animeImage
         FROM episodes_cache e
-        INNER JOIN anime_cache a ON e.anime_id = a.id
+        INNER JOIN anime_cache a ON a.rowid = (
+            SELECT b.rowid FROM anime_cache b
+            WHERE b.id = e.anime_id
+            ORDER BY (b.category = '') DESC, LENGTH(b.synopsis) DESC, b.updated_at DESC
+            LIMIT 1
+        )
         WHERE e.id = :episodeId
     """)
     suspend fun getByIdWithAnime(episodeId: Int): EpisodeWithAnime?

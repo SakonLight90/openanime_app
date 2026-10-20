@@ -185,6 +185,7 @@ class AnimeRepositoryImpl(
         episodeDao.getLatest().map { list ->
             list.map { it.toDomainEpisode() }
                 .distinctBy { Pair(cleanAnimeTitle(it.anime?.title ?: ""), it.number) }
+                .distinctBy { it.id }
         }
 
     override fun getGenreAnime(genreId: Int, page: Int): Flow<PagedAnime> = flow {
